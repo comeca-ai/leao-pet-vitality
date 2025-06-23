@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -7,6 +6,7 @@ import ProductSelector from "@/components/checkout/ProductSelector";
 import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useToast } from "@/hooks/use-toast";
+import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
 
 const Checkout = () => {
   const [quantity, setQuantity] = useState(1);
@@ -22,6 +22,7 @@ const Checkout = () => {
   });
 
   const { mutate: createCheckout, isPending } = useStripeCheckout();
+  const { mutate: sendOrderEmail } = useSendOrderEmail();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -45,6 +46,29 @@ const Checkout = () => {
     }, {
       onSuccess: (data) => {
         console.log('Redirecting to Stripe checkout:', data.url);
+        
+        // Send confirmation email before redirecting to payment
+        sendOrderEmail({
+          customerName: customerInfo.name,
+          customerEmail: customerInfo.email,
+          orderNumber: data.sessionId.slice(-8).toUpperCase(),
+          orderTotal: total,
+          orderItems: [{
+            name: "Extrato de Juba de Leão 30ml",
+            quantity: quantity,
+            price: productPrice,
+          }],
+          emailType: 'confirmation',
+        }, {
+          onSuccess: () => {
+            console.log('Confirmation email sent successfully');
+          },
+          onError: (error) => {
+            console.error('Failed to send confirmation email:', error);
+            // Don't stop the checkout process if email fails
+          }
+        });
+        
         // Redirect to Stripe checkout
         window.location.href = data.url;
       },

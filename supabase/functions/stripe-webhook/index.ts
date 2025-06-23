@@ -49,6 +49,57 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    // Helper function to send order email
+    const sendOrderEmail = async (orderId: string, emailType: 'payment_success' | 'payment_failed') => {
+      try {
+        // Get order details with customer info
+        const { data: orderData, error: orderError } = await supabase
+          .from('orders')
+          .select(`
+            *,
+            order_items (
+              *,
+              product:products (*)
+            ),
+            profile:profiles (nome, email)
+          `)
+          .eq('id', orderId)
+          .single();
+
+        if (orderError || !orderData) {
+          console.error('Error fetching order for email:', orderError);
+          return;
+        }
+
+        // Prepare email data
+        const emailData = {
+          customerName: orderData.profile?.nome || 'Cliente',
+          customerEmail: orderData.profile?.email || '',
+          orderNumber: orderId.slice(-8).toUpperCase(),
+          orderTotal: orderData.valor_total,
+          orderItems: orderData.order_items.map((item: any) => ({
+            name: item.product.nome,
+            quantity: item.quantidade,
+            price: item.preco_unitario,
+          })),
+          emailType,
+        };
+
+        // Send email via edge function
+        const { error: emailError } = await supabase.functions.invoke('send-order-email', {
+          body: emailData,
+        });
+
+        if (emailError) {
+          console.error('Error sending order email:', emailError);
+        } else {
+          console.log('Order email sent successfully for order:', orderId);
+        }
+      } catch (error) {
+        console.error('Error in sendOrderEmail:', error);
+      }
+    };
+
     // Handle different event types
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -70,6 +121,11 @@ serve(async (req) => {
           console.error('Error updating order status:', updateError);
         } else {
           console.log('Order updated successfully:', order);
+          
+          // Send payment success email
+          if (order?.id) {
+            await sendOrderEmail(order.id, 'payment_success');
+          }
         }
         break;
       }
@@ -90,6 +146,11 @@ serve(async (req) => {
           console.error('Error updating order status for payment intent:', updateError);
         } else {
           console.log('Order updated for payment intent:', order);
+          
+          // Send payment success email
+          if (order?.id) {
+            await sendOrderEmail(order.id, 'payment_success');
+          }
         }
         break;
       }
@@ -110,6 +171,11 @@ serve(async (req) => {
           console.error('Error updating order status for failed payment:', updateError);
         } else {
           console.log('Order marked as cancelled for failed payment:', order);
+          
+          // Send payment failed email
+          if (order?.id) {
+            await sendOrderEmail(order.id, 'payment_failed');
+          }
         }
         break;
       }
