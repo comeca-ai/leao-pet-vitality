@@ -2,6 +2,7 @@
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,14 +12,14 @@ const Header = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-10 h-10 bg-gradient-to-br from-earth-500 to-leaf-500 rounded-lg flex items-center justify-center">
               <span className="text-white font-bold text-lg">JL</span>
             </div>
             <div className="font-bold text-xl text-earth-700">
               Juba de Leão <span className="text-leaf-600">Pets</span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-8">
@@ -34,9 +35,22 @@ const Header = () => {
             <a href="#faq" className="text-earth-600 hover:text-leaf-600 transition-colors">
               FAQ
             </a>
-            <Button className="bg-leaf-600 hover:bg-leaf-700 text-white px-6 py-2 rounded-full">
-              Comprar Agora
-            </Button>
+            <div className="flex items-center space-x-4">
+              <Link 
+                to="/login"
+                className="text-earth-600 hover:text-leaf-600 transition-colors font-medium"
+              >
+                Entrar
+              </Link>
+              <Link to="/cadastro">
+                <Button className="bg-earth-600 hover:bg-earth-700 text-white px-4 py-2 rounded-full">
+                  Cadastrar
+                </Button>
+              </Link>
+              <Button className="bg-leaf-600 hover:bg-leaf-700 text-white px-6 py-2 rounded-full">
+                Comprar Agora
+              </Button>
+            </div>
           </nav>
 
           {/* Mobile Menu Button */}
@@ -64,9 +78,22 @@ const Header = () => {
               <a href="#faq" className="text-earth-600 hover:text-leaf-600 transition-colors">
                 FAQ
               </a>
-              <Button className="bg-leaf-600 hover:bg-leaf-700 text-white w-full rounded-full">
-                Comprar Agora
-              </Button>
+              <div className="flex flex-col space-y-2 pt-2">
+                <Link 
+                  to="/login"
+                  className="text-earth-600 hover:text-leaf-600 transition-colors font-medium text-center"
+                >
+                  Entrar
+                </Link>
+                <Link to="/cadastro">
+                  <Button className="bg-earth-600 hover:bg-earth-700 text-white w-full rounded-full">
+                    Cadastrar
+                  </Button>
+                </Link>
+                <Button className="bg-leaf-600 hover:bg-leaf-700 text-white w-full rounded-full">
+                  Comprar Agora
+                </Button>
+              </div>
             </nav>
           </div>
         )}
