@@ -2,64 +2,74 @@
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Star } from "lucide-react";
+import { useTestimonials } from "@/hooks/useTestimonials";
 
 const TestimonialsSection = () => {
-  const testimonials = [
+  const { data: testimonials, isLoading, error } = useTestimonials();
+
+  if (isLoading) {
+    return (
+      <section id="depoimentos" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Carregando depoimentos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Error loading testimonials:', error);
+    return (
+      <section id="depoimentos" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Erro ao carregar depoimentos.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Fallback testimonials caso não haja dados no banco
+  const fallbackTestimonials = [
     {
-      name: "Maria Silva",
-      location: "São Paulo, SP",
-      petName: "Max",
-      petType: "Golden Retriever",
-      rating: 5,
-      text: "Incrível! O Max estava com baixa imunidade e depois de 3 semanas usando o extrato, ele está muito mais disposto e saudável. Recomendo demais!",
-      initial: "MS"
+      id: '1',
+      nome: "Maria Silva",
+      texto: "Incrível! O Max estava com baixa imunidade e depois de 3 semanas usando o extrato, ele está muito mais disposto e saudável. Recomendo demais!",
+      aprovado: true,
+      destaque: true,
+      data: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      foto_url: null
     },
     {
-      name: "João Santos",
-      location: "Rio de Janeiro, RJ", 
-      petName: "Luna",
-      petType: "Gata Persa",
-      rating: 5,
-      text: "A Luna é idosa e estava meio apática. Com o Juba de Leão, ela voltou a brincar e está mais alerta. O produto é excelente e entrega rápida.",
-      initial: "JS"
+      id: '2',
+      nome: "João Santos",
+      texto: "A Luna é idosa e estava meio apática. Com o Juba de Leão, ela voltou a brincar e está mais alerta. O produto é excelente e entrega rápida.",
+      aprovado: true,
+      destaque: false,
+      data: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      foto_url: null
     },
     {
-      name: "Ana Costa",
-      location: "Belo Horizonte, MG",
-      petName: "Bob e Mel",
-      petType: "SRD",
-      rating: 5,
-      text: "Uso para meus dois cachorros há 2 meses. A diferença é visível! Eles estão mais animados, com pelo mais bonito e sem problemas de saúde.",
-      initial: "AC"
-    },
-    {
-      name: "Pedro Oliveira",
-      location: "Curitiba, PR",
-      petName: "Mimi",
-      petType: "Gata Siamesa",
-      rating: 5,
-      text: "Veterinário recomendou para a cognição da Mimi. Ela está mais ativa e interativa. Produto de qualidade com aprovação MAPA me dá segurança.",
-      initial: "PO"
-    },
-    {
-      name: "Carla Ferreira",
-      location: "Salvador, BA",
-      petName: "Thor",
-      petType: "Pastor Alemão",
-      rating: 5,
-      text: "Thor estava com problemas imunológicos. Após 1 mês usando, os exames melhoraram muito! É impressionante a eficácia do produto.",
-      initial: "CF"
-    },
-    {
-      name: "Roberto Lima",
-      location: "Fortaleza, CE",
-      petName: "Princesa",
-      petType: "Poodle",
-      rating: 5,
-      text: "A Princesa tem 12 anos e estava bem debilitada. Com o extrato, ela rejuvenesceu! Mais energia, apetite e disposição para passear.",
-      initial: "RL"
+      id: '3',
+      nome: "Ana Costa",
+      texto: "Uso para meus dois cachorros há 2 meses. A diferença é visível! Eles estão mais animados, com pelo mais bonito e sem problemas de saúde.",
+      aprovado: true,
+      destaque: true,
+      data: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      foto_url: null
     }
   ];
+
+  const displayTestimonials = testimonials && testimonials.length > 0 ? testimonials : fallbackTestimonials;
 
   return (
     <section id="depoimentos" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
@@ -76,44 +86,37 @@ const TestimonialsSection = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {testimonials.map((testimonial, index) => (
+          {displayTestimonials.map((testimonial) => (
             <Card 
-              key={index}
+              key={testimonial.id}
               className="p-6 border-earth-200 hover:border-leaf-300 transition-all duration-300 hover:shadow-lg bg-white/80 backdrop-blur-sm"
             >
               <div className="space-y-4">
                 {/* Rating */}
                 <div className="flex items-center space-x-1">
-                  {[...Array(testimonial.rating)].map((_, i) => (
+                  {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   ))}
                 </div>
 
                 {/* Testimonial text */}
                 <p className="text-earth-700 leading-relaxed italic">
-                  "{testimonial.text}"
+                  "{testimonial.texto}"
                 </p>
-
-                {/* Pet info */}
-                <div className="bg-leaf-50 rounded-lg p-3">
-                  <p className="text-sm text-leaf-700 font-medium">
-                    Pet: {testimonial.petName} ({testimonial.petType})
-                  </p>
-                </div>
 
                 {/* User info */}
                 <div className="flex items-center space-x-3 pt-2 border-t border-earth-100">
                   <Avatar className="w-10 h-10">
                     <AvatarFallback className="bg-earth-200 text-earth-700 text-sm font-medium">
-                      {testimonial.initial}
+                      {testimonial.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="font-semibold text-earth-800 text-sm">
-                      {testimonial.name}
+                      {testimonial.nome}
                     </p>
                     <p className="text-earth-500 text-xs">
-                      {testimonial.location}
+                      {new Date(testimonial.data).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                 </div>

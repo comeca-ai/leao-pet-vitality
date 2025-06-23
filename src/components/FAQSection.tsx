@@ -5,34 +5,77 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { useFAQs } from "@/hooks/useFAQs";
 
 const FAQSection = () => {
-  const faqs = [
+  const { data: faqs, isLoading, error } = useFAQs();
+
+  if (isLoading) {
+    return (
+      <section id="faq" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Carregando perguntas frequentes...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    console.error('Error loading FAQs:', error);
+    return (
+      <section id="faq" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Erro ao carregar perguntas frequentes.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Fallback FAQs caso não haja dados no banco
+  const fallbackFAQs = [
     {
-      question: "O Extrato de Juba de Leão é seguro para meu pet?",
-      answer: "Sim, nosso produto é 100% seguro e aprovado pelo MAPA (Ministério da Agricultura, Pecuária e Abastecimento). É desenvolvido especificamente para pets, seguindo rigorosos padrões de qualidade e segurança. Recomendamos sempre consultar um veterinário antes de iniciar qualquer suplementação."
+      id: '1',
+      pergunta: "O Extrato de Juba de Leão é seguro para meu pet?",
+      resposta: "Sim, nosso produto é 100% seguro e aprovado pelo MAPA (Ministério da Agricultura, Pecuária e Abastecimento). É desenvolvido especificamente para pets, seguindo rigorosos padrões de qualidade e segurança. Recomendamos sempre consultar um veterinário antes de iniciar qualquer suplementação.",
+      ordem: 1,
+      ativo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
-      question: "Em quanto tempo vou ver os resultados?",
-      answer: "Os primeiros sinais de melhora geralmente aparecem entre 2-4 semanas de uso contínuo. Para resultados mais significativos, recomendamos o uso por pelo menos 60-90 dias. Cada pet responde de forma diferente, mas a maioria dos tutores reporta melhorias na disposição e bem-estar já nas primeiras semanas."
+      id: '2',
+      pergunta: "Em quanto tempo vou ver os resultados?",
+      resposta: "Os primeiros sinais de melhora geralmente aparecem entre 2-4 semanas de uso contínuo. Para resultados mais significativos, recomendamos o uso por pelo menos 60-90 dias. Cada pet responde de forma diferente, mas a maioria dos tutores reporta melhorias na disposição e bem-estar já nas primeiras semanas.",
+      ordem: 2,
+      ativo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
-      question: "Como devo administrar o produto?",
-      answer: "A dosagem varia conforme o peso do pet. Para cães até 10kg: 0,5ml por dia. De 10-25kg: 1ml por dia. Acima de 25kg: 1,5ml por dia. Para gatos: 0,5ml por dia. Pode ser misturado na ração ou administrado diretamente. Agite antes de usar e mantenha refrigerado após aberto."
+      id: '3',
+      pergunta: "Como devo administrar o produto?",
+      resposta: "A dosagem varia conforme o peso do pet. Para cães até 10kg: 0,5ml por dia. De 10-25kg: 1ml por dia. Acima de 25kg: 1,5ml por dia. Para gatos: 0,5ml por dia. Pode ser misturado na ração ou administrado diretamente. Agite antes de usar e mantenha refrigerado após aberto.",
+      ordem: 3,
+      ativo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     },
     {
-      question: "O produto tem garantia?",
-      answer: "Sim! Oferecemos 30 dias de garantia total. Se você não ficar satisfeito com os resultados, devolvemos 100% do seu dinheiro, sem perguntas. Nossa confiança no produto nos permite oferecer essa garantia completa."
-    },
-    {
-      question: "Qual a forma de entrega e prazo?",
-      answer: "Trabalhamos com frete grátis para todo o Brasil via Correios. O prazo de entrega varia de 3-7 dias úteis para a região Sudeste/Sul e 5-10 dias úteis para outras regiões. Você recebe o código de rastreamento por email assim que o produto for postado."
-    },
-    {
-      question: "Posso dar para filhotes ou pets idosos?",
-      answer: "Sim, o produto é seguro para pets de todas as idades. Para filhotes a partir de 6 meses, use metade da dose recomendada. Para pets idosos, o produto é especialmente benéfico, ajudando na cognição e vitalidade. Sempre consulte seu veterinário para orientações específicas."
+      id: '4',
+      pergunta: "O produto tem garantia?",
+      resposta: "Sim! Oferecemos 30 dias de garantia total. Se você não ficar satisfeito com os resultados, devolvemos 100% do seu dinheiro, sem perguntas. Nossa confiança no produto nos permite oferecer essa garantia completa.",
+      ordem: 4,
+      ativo: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     }
   ];
+
+  const displayFAQs = faqs && faqs.length > 0 ? faqs : fallbackFAQs;
 
   return (
     <section id="faq" className="py-16 md:py-24 bg-gradient-to-br from-cream-50 to-leaf-50">
@@ -50,17 +93,17 @@ const FAQSection = () => {
 
         <div className="max-w-4xl mx-auto">
           <Accordion type="single" collapsible className="space-y-4">
-            {faqs.map((faq, index) => (
+            {displayFAQs.map((faq, index) => (
               <AccordionItem 
-                key={index} 
-                value={`item-${index}`}
+                key={faq.id} 
+                value={`item-${faq.id}`}
                 className="bg-white rounded-xl border border-earth-200 px-6 shadow-sm"
               >
                 <AccordionTrigger className="text-left font-semibold text-earth-800 hover:text-leaf-600 transition-colors py-6">
-                  {faq.question}
+                  {faq.pergunta}
                 </AccordionTrigger>
                 <AccordionContent className="text-earth-600 leading-relaxed pb-6">
-                  {faq.answer}
+                  {faq.resposta}
                 </AccordionContent>
               </AccordionItem>
             ))}
