@@ -94,7 +94,7 @@ const Perfil = () => {
     
     const paymentMethods = {
       'pix': 'PIX',
-      'cartao': 'Cartão de Crédito',
+      'cartao': 'Cartão de Crédito', 
       'boleto': 'Boleto Bancário',
       'whatsapp': 'WhatsApp'
     };

@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -9,6 +10,29 @@ const corsHeaders = {
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
   console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
+};
+
+const determinePaymentMethod = (session: any, paymentIntent?: any) => {
+  // Primeiro, verificar session payment_method_types
+  if (session?.payment_method_types) {
+    if (session.payment_method_types.includes('boleto')) {
+      return 'boleto';
+    }
+    if (session.payment_method_types.includes('pix')) {
+      return 'pix';
+    }
+  }
+
+  // Verificar payment_intent se disponível
+  if (paymentIntent?.charges?.data?.[0]?.payment_method_details) {
+    const methodDetails = paymentIntent.charges.data[0].payment_method_details;
+    if (methodDetails.boleto) return 'boleto';
+    if (methodDetails.pix) return 'pix';
+    if (methodDetails.card) return 'cartao';
+  }
+
+  // Default para cartão
+  return 'cartao';
 };
 
 serve(async (req) => {
@@ -85,13 +109,14 @@ serve(async (req) => {
         }
 
         if (order) {
-          // Determinar forma de pagamento baseada no método do Stripe
-          let paymentMethod = 'cartao'; // default
-          if (session.payment_method_types?.includes('boleto')) {
-            paymentMethod = 'boleto';
-          } else if (session.payment_method_types?.includes('pix')) {
-            paymentMethod = 'pix';
-          }
+          // Determinar forma de pagamento com função melhorada
+          const paymentMethod = determinePaymentMethod(session);
+          
+          logStep('Payment method determined', { 
+            sessionId: session.id,
+            paymentMethod: paymentMethod,
+            paymentMethodTypes: session.payment_method_types 
+          });
 
           // Atualizar status para aguardando pagamento com forma de pagamento correta
           const { error: updateError } = await supabase
@@ -113,6 +138,8 @@ serve(async (req) => {
             orderId: order.id, 
             paymentMethod: paymentMethod 
           });
+        } else {
+          logStep('No order found for session', { sessionId: session.id });
         }
         break
       }
@@ -138,17 +165,12 @@ serve(async (req) => {
         }
 
         // Determinar forma de pagamento pelo método usado
-        let finalPaymentMethod = order.forma_pagamento || 'cartao';
-        if (paymentIntent.charges?.data?.[0]?.payment_method_details) {
-          const methodDetails = paymentIntent.charges.data[0].payment_method_details;
-          if (methodDetails.boleto) {
-            finalPaymentMethod = 'boleto';
-          } else if (methodDetails.pix) {
-            finalPaymentMethod = 'pix';
-          } else if (methodDetails.card) {
-            finalPaymentMethod = 'cartao';
-          }
-        }
+        const finalPaymentMethod = determinePaymentMethod(null, paymentIntent);
+
+        logStep('Final payment method determined', { 
+          paymentIntentId: paymentIntent.id,
+          paymentMethod: finalPaymentMethod 
+        });
 
         // Atualizar status para pago com forma de pagamento correta
         const { error: updateError } = await supabase

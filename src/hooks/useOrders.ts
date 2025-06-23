@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, Order, OrderWithItems } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -35,10 +34,22 @@ export const useOrders = () => {
         throw error
       }
 
-      console.log('Orders fetched successfully:', data)
-      return data as OrderWithItems[]
+      console.log('Orders fetched successfully:', data?.length || 0, 'orders found')
+      
+      // Filtro adicional no frontend para garantir consistência
+      const filteredData = data?.filter(order => {
+        const isOldInitiated = order.status === 'iniciado' && 
+          new Date(order.criado_em) < new Date(Date.now() - 60 * 60 * 1000)
+        return !isOldInitiated
+      }) || []
+
+      console.log('Orders after filtering:', filteredData.length, 'orders remaining')
+      
+      return filteredData as OrderWithItems[]
     },
     enabled: !!user?.id,
+    staleTime: 30000, // Cache por 30 segundos para evitar muitas requisições
+    retry: 2, // Tentar novamente em caso de erro
   })
 }
 
