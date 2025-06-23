@@ -5,6 +5,13 @@ import { Shield, Star, Truck } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const HeroSection = () => {
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <section className="bg-gradient-to-br from-cream-50 to-cream-100 py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -61,6 +68,7 @@ const HeroSection = () => {
               <Button 
                 variant="outline" 
                 size="lg"
+                onClick={() => scrollToSection("beneficios")}
                 className="border-earth-300 text-earth-700 hover:bg-earth-50 px-8 py-4 text-lg rounded-full"
               >
                 Saiba Mais
