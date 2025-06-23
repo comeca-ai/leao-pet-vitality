@@ -13,26 +13,31 @@ const logStep = (step: string, details?: any) => {
 };
 
 const determinePaymentMethod = (session: any, paymentIntent?: any) => {
-  // Primeiro, verificar session payment_method_types
-  if (session?.payment_method_types) {
-    if (session.payment_method_types.includes('boleto')) {
-      return 'boleto';
+  try {
+    // Primeiro, verificar session payment_method_types
+    if (session?.payment_method_types) {
+      if (session.payment_method_types.includes('boleto')) {
+        return 'boleto';
+      }
+      if (session.payment_method_types.includes('pix')) {
+        return 'pix';
+      }
     }
-    if (session.payment_method_types.includes('pix')) {
-      return 'pix';
+
+    // Verificar payment_intent se disponível
+    if (paymentIntent?.charges?.data?.[0]?.payment_method_details) {
+      const methodDetails = paymentIntent.charges.data[0].payment_method_details;
+      if (methodDetails.boleto) return 'boleto';
+      if (methodDetails.pix) return 'pix';
+      if (methodDetails.card) return 'cartao';
     }
-  }
 
-  // Verificar payment_intent se disponível
-  if (paymentIntent?.charges?.data?.[0]?.payment_method_details) {
-    const methodDetails = paymentIntent.charges.data[0].payment_method_details;
-    if (methodDetails.boleto) return 'boleto';
-    if (methodDetails.pix) return 'pix';
-    if (methodDetails.card) return 'cartao';
+    // Default para cartão
+    return 'cartao';
+  } catch (error) {
+    logStep('Error determining payment method, defaulting to cartao', { error: error.message });
+    return 'cartao';
   }
-
-  // Default para cartão
-  return 'cartao';
 };
 
 serve(async (req) => {
@@ -96,16 +101,35 @@ serve(async (req) => {
         const session = event.data.object
         logStep('Checkout session completed', { sessionId: session.id });
         
-        // Buscar o pedido pela session ID
-        const { data: order, error: orderError } = await supabase
+        // Buscar o pedido pela session ID ou payment_intent
+        let order;
+        
+        // Primeiro tentar buscar pelo session ID
+        const { data: orderBySession, error: sessionError } = await supabase
           .from('orders')
           .select('*')
           .eq('stripe_payment_intent_id', session.id)
-          .single()
+          .maybeSingle()
 
-        if (orderError && orderError.code !== 'PGRST116') {
-          logStep('Error finding order', { error: orderError });
-          throw orderError
+        if (sessionError && sessionError.code !== 'PGRST116') {
+          logStep('Error finding order by session', { error: sessionError });
+        }
+
+        if (orderBySession) {
+          order = orderBySession;
+        } else if (session.payment_intent) {
+          // Tentar buscar pelo payment_intent ID
+          const { data: orderByIntent, error: intentError } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('stripe_payment_intent_id', session.payment_intent)
+            .maybeSingle()
+
+          if (intentError && intentError.code !== 'PGRST116') {
+            logStep('Error finding order by payment intent', { error: intentError });
+          }
+
+          order = orderByIntent;
         }
 
         if (order) {
@@ -124,7 +148,7 @@ serve(async (req) => {
             .update({ 
               status: 'aguardando_pagamento',
               forma_pagamento: paymentMethod,
-              stripe_payment_intent_id: session.payment_intent,
+              stripe_payment_intent_id: session.payment_intent || session.id,
               atualizado_em: new Date().toISOString()
             })
             .eq('id', order.id)
@@ -139,7 +163,7 @@ serve(async (req) => {
             paymentMethod: paymentMethod 
           });
         } else {
-          logStep('No order found for session', { sessionId: session.id });
+          logStep('No order found for session', { sessionId: session.id, paymentIntent: session.payment_intent });
         }
         break
       }
@@ -157,11 +181,16 @@ serve(async (req) => {
             order_items(*, products(*))
           `)
           .eq('stripe_payment_intent_id', paymentIntent.id)
-          .single()
+          .maybeSingle()
 
         if (orderError) {
           logStep('Error finding order for payment success', { error: orderError });
           throw orderError
+        }
+
+        if (!order) {
+          logStep('No order found for payment intent', { paymentIntentId: paymentIntent.id });
+          break;
         }
 
         // Determinar forma de pagamento pelo método usado
@@ -194,28 +223,30 @@ serve(async (req) => {
 
         // Enviar e-mail de confirmação de pagamento
         try {
-          const orderNumber = order.id.slice(-8).toUpperCase();
-          const orderItems = order.order_items.map((item: any) => ({
-            name: item.products.nome,
-            quantity: item.quantidade,
-            price: item.preco_unitario,
-          }));
+          if (order.profiles && order.order_items) {
+            const orderNumber = order.id.slice(-8).toUpperCase();
+            const orderItems = order.order_items.map((item: any) => ({
+              name: item.products?.nome || 'Produto',
+              quantity: item.quantidade,
+              price: item.preco_unitario,
+            }));
 
-          const { error: emailError } = await supabase.functions.invoke('send-order-email', {
-            body: {
-              customerName: order.profiles.nome,
-              customerEmail: order.profiles.email,
-              orderNumber: orderNumber,
-              orderTotal: order.valor_total,
-              orderItems: orderItems,
-              emailType: 'payment_success',
+            const { error: emailError } = await supabase.functions.invoke('send-order-email', {
+              body: {
+                customerName: order.profiles.nome,
+                customerEmail: order.profiles.email,
+                orderNumber: orderNumber,
+                orderTotal: order.valor_total,
+                orderItems: orderItems,
+                emailType: 'payment_success',
+              }
+            });
+
+            if (emailError) {
+              logStep('Error sending payment success email', { error: emailError });
+            } else {
+              logStep('Payment success email sent', { orderId: order.id });
             }
-          });
-
-          if (emailError) {
-            logStep('Error sending payment success email', { error: emailError });
-          } else {
-            logStep('Payment success email sent', { orderId: order.id });
           }
         } catch (emailError) {
           logStep('Failed to send payment success email', { error: emailError });
@@ -253,12 +284,12 @@ serve(async (req) => {
               order_items(*, products(*))
             `)
             .eq('stripe_payment_intent_id', paymentIntent.id)
-            .single()
+            .maybeSingle()
 
-          if (order) {
+          if (order && order.profiles && order.order_items) {
             const orderNumber = order.id.slice(-8).toUpperCase();
             const orderItems = order.order_items.map((item: any) => ({
-              name: item.products.nome,
+              name: item.products?.nome || 'Produto',
               quantity: item.quantidade,
               price: item.preco_unitario,
             }));
