@@ -38,7 +38,7 @@ export const useNotifications = () => {
       variant: toastVariant,
       duration,
       action: action ? (
-        <ToastAction onClick={action.onClick}>
+        <ToastAction altText={action.label} onClick={action.onClick}>
           {action.label}
         </ToastAction>
       ) : undefined,
