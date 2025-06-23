@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Shield, Truck } from "lucide-react";
+import { CreditCard, Shield, Truck, AlertCircle } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 interface StripeOrderSummaryProps {
   quantity: number;
@@ -10,6 +11,7 @@ interface StripeOrderSummaryProps {
   total: number;
   onCheckout: () => void;
   isLoading: boolean;
+  isFormValid?: boolean;
 }
 
 const StripeOrderSummary = ({ 
@@ -17,7 +19,8 @@ const StripeOrderSummary = ({
   productPrice, 
   total, 
   onCheckout,
-  isLoading
+  isLoading,
+  isFormValid = true
 }: StripeOrderSummaryProps) => {
   return (
     <div>
@@ -44,14 +47,26 @@ const StripeOrderSummary = ({
             </div>
           </div>
 
+          {!isFormValid && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-orange-600" />
+              <span className="text-sm text-orange-800">
+                Complete seus dados para continuar
+              </span>
+            </div>
+          )}
+
           <div className="space-y-4 pt-4">
             <Button 
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onCheckout}
-              disabled={isLoading}
+              disabled={isLoading || !isFormValid}
             >
               {isLoading ? (
-                "Processando..."
+                <div className="flex items-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Processando...
+                </div>
               ) : (
                 <>
                   <CreditCard className="w-5 h-5 mr-2" />
