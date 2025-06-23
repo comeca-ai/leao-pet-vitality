@@ -1,12 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { User, MapPin, Package, Loader2 } from "lucide-react";
+import { User, MapPin, Package, Loader2, ArrowLeft } from "lucide-react";
 import { useProfile, useUpdateProfile } from "@/hooks/useProfile";
 import { useAddresses, useCreateAddress } from "@/hooks/useAddresses";
 import { useOrders } from "@/hooks/useOrders";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Link } from "react-router-dom";
 
 const Perfil = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -28,6 +29,16 @@ const Perfil = () => {
   const updateProfile = useUpdateProfile();
   const createAddress = useCreateAddress();
   const { toast } = useToast();
+
+  // Atualizar formData quando o profile for carregado
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        nome: profile.nome || "",
+        telefone: profile.telefone || "",
+      });
+    }
+  }, [profile]);
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,8 +107,15 @@ const Perfil = () => {
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-cream-50 to-earth-50">
         <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Header */}
+          {/* Header com botão voltar */}
           <div className="mb-8">
+            <Link 
+              to="/" 
+              className="inline-flex items-center text-earth-600 hover:text-leaf-600 transition-colors mb-4"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao início
+            </Link>
             <h1 className="text-3xl font-bold text-earth-700 mb-2">Meu Perfil</h1>
             <p className="text-earth-600">Gerencie suas informações pessoais, endereços e pedidos</p>
           </div>
@@ -262,7 +280,6 @@ const Perfil = () => {
               </Card>
             </TabsContent>
 
-            {/* Aba Pedidos */}
             <TabsContent value="pedidos">
               <Card>
                 <CardHeader>

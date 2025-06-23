@@ -27,6 +27,8 @@ export const useProfile = () => {
       return data as Profile
     },
     enabled: !!user?.id,
+    staleTime: 0, // Sempre buscar dados atualizados
+    refetchOnWindowFocus: true,
   })
 }
 
