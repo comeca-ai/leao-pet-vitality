@@ -70,7 +70,7 @@ const Checkout = () => {
   const isProcessing = processingState !== 'idle';
 
   // Verificar se deve mostrar telas de status (loading, erro, etc.)
-  const statusScreen = (
+  const statusComponent = (
     <CheckoutStatus
       isLoadingProducts={isLoadingProducts}
       productsError={productsError}
@@ -82,8 +82,9 @@ const Checkout = () => {
     />
   );
 
-  if (statusScreen) {
-    return statusScreen;
+  // Se o componente de status retorna algo, renderizar isso
+  if (isLoadingProducts || productsError || !mainProduct || paymentError || loading) {
+    return statusComponent;
   }
 
   // Se não há usuário após o loading, não renderiza nada (vai redirecionar)

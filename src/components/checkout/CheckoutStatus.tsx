@@ -103,6 +103,7 @@ const CheckoutStatus = ({
     );
   }
 
+  // Se chegou até aqui, não deve mostrar nenhuma tela de status
   return null;
 };
 
