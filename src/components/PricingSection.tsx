@@ -128,7 +128,7 @@ const PricingSection = () => {
 
               {/* CTA Button */}
               <div className="space-y-4">
-                <Link to="/cadastro">
+                <Link to="/checkout">
                   <Button 
                     size="lg" 
                     className="w-full bg-leaf-600 hover:bg-leaf-700 text-white py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
