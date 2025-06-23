@@ -31,7 +31,7 @@ const ProductSelector = ({
   };
 
   const handleDecrease = () => {
-    if (quantity > 1) {
+    if (quantity > 0) {
       const newQuantity = quantity - 1;
       onQuantityChange(newQuantity);
       setInputValue(newQuantity.toString());
@@ -42,23 +42,23 @@ const ProductSelector = ({
     setInputValue(value);
     
     const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue >= 1 && numValue <= maxQuantity) {
+    if (!isNaN(numValue) && numValue >= 0 && numValue <= maxQuantity) {
       onQuantityChange(numValue);
     }
   };
 
   const handleInputBlur = () => {
     const numValue = parseInt(inputValue);
-    if (isNaN(numValue) || numValue < 1) {
-      setInputValue("1");
-      onQuantityChange(1);
+    if (isNaN(numValue) || numValue < 0) {
+      setInputValue("0");
+      onQuantityChange(0);
     } else if (numValue > maxQuantity) {
       setInputValue(maxQuantity.toString());
       onQuantityChange(maxQuantity);
     }
   };
 
-  const isQuantityValid = quantity <= maxQuantity && quantity >= 1;
+  const isQuantityValid = quantity <= maxQuantity && quantity >= 0;
   const isStockLow = maxQuantity <= 10;
 
   return (
@@ -94,7 +94,7 @@ const ProductSelector = ({
                   variant="outline"
                   size="sm"
                   onClick={handleDecrease}
-                  disabled={quantity <= 1}
+                  disabled={quantity <= 0}
                   className="h-10 w-10 p-0"
                 >
                   <Minus className="w-4 h-4" />
@@ -102,7 +102,7 @@ const ProductSelector = ({
                 
                 <Input
                   type="number"
-                  min="1"
+                  min="0"
                   max={maxQuantity}
                   value={inputValue}
                   onChange={(e) => handleInputChange(e.target.value)}

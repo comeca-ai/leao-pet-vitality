@@ -41,7 +41,7 @@ const Checkout = () => {
     }
   }, [user, loading, navigate, notifications]);
 
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState(0);
   const [currentStep, setCurrentStep] = useState(1);
   const [processingState, setProcessingState] = useState<'idle' | 'validating' | 'creating-order' | 'sending-email' | 'redirecting' | 'complete'>('idle');
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'whatsapp'>('stripe');
@@ -96,7 +96,7 @@ const Checkout = () => {
     
     // Verificar estoque imediatamente
     const validation = validateStockAvailability(stockData, qty);
-    if (!validation.isAvailable) {
+    if (!validation.isAvailable && qty > 0) {
       setPaymentError({
         type: 'stock',
         message: validation.message
@@ -116,6 +116,15 @@ const Checkout = () => {
         "Produto indisponível",
         "Nenhum produto está disponível no momento."
       );
+      return false;
+    }
+
+    // Validar quantidade
+    if (quantity <= 0) {
+      notifications.showValidationError(
+        'Por favor, selecione uma quantidade maior que zero.'
+      );
+      setCurrentStep(2);
       return false;
     }
 
@@ -363,7 +372,7 @@ const Checkout = () => {
           <ProcessingStates currentState={processingState} />
 
           {/* Alerta de estoque se necessário */}
-          {!stockValidation.isAvailable && (
+          {!stockValidation.isAvailable && quantity > 0 && (
             <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 text-orange-800">
                 <AlertCircle className="w-5 h-5" />
@@ -439,7 +448,7 @@ const Checkout = () => {
                     total={total}
                     onCheckout={handleStripeCheckout}
                     isLoading={isStripeLoading || isProcessing}
-                    isFormValid={isFormValid && stockValidation.isAvailable}
+                    isFormValid={isFormValid && stockValidation.isAvailable && quantity > 0}
                   />
                 ) : (
                   <WhatsAppOption
@@ -447,7 +456,7 @@ const Checkout = () => {
                     total={total}
                     onWhatsAppCheckout={handleWhatsAppCheckout}
                     isLoading={isOrderLoading}
-                    isFormValid={isFormValid && stockValidation.isAvailable}
+                    isFormValid={isFormValid && stockValidation.isAvailable && quantity > 0}
                   />
                 )}
               </div>
