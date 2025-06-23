@@ -48,7 +48,7 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/cadastro">
+              <Link to="/checkout">
                 <Button 
                   size="lg" 
                   className="bg-leaf-600 hover:bg-leaf-700 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
