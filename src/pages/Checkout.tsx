@@ -11,16 +11,20 @@ import LoadingOverlay from "@/components/checkout/LoadingOverlay";
 import ProcessingStates from "@/components/checkout/ProcessingStates";
 import FormValidationIndicator from "@/components/checkout/FormValidationIndicator";
 import StepTransition from "@/components/checkout/StepTransition";
+import PaymentErrorHandler from "@/components/checkout/PaymentErrorHandler";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useProcessOrder } from "@/hooks/useProcessOrder";
+import { useStockValidation, validateStockAvailability } from "@/hooks/useStockValidation";
 import { useToast } from "@/hooks/use-toast";
 import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
+import { validateCompleteAddress } from "@/components/checkout/utils/validation";
 
 const Checkout = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentStep, setCurrentStep] = useState(1);
   const [processingState, setProcessingState] = useState<'idle' | 'validating' | 'creating-order' | 'sending-email' | 'redirecting' | 'complete'>('idle');
   const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'whatsapp'>('stripe');
+  const [paymentError, setPaymentError] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
@@ -38,43 +42,78 @@ const Checkout = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Usar um product ID fixo para o produto principal
+  const mainProductId = "123e4567-e89b-12d3-a456-426614174000";
+  const { data: stockData, refetch: refetchStock } = useStockValidation(mainProductId);
+
   const productPrice = 49.90;
   const total = productPrice * quantity;
 
-  const isFormValid = Boolean(
-    customerInfo.name && 
-    customerInfo.email && 
-    customerInfo.phone &&
-    customerInfo.address.city &&
-    customerInfo.address.street
-  );
+  // Validação completa do endereço
+  const addressValidation = validateCompleteAddress(customerInfo);
+  const isFormValid = addressValidation.isValid;
+
+  // Validação de estoque
+  const stockValidation = validateStockAvailability(stockData, quantity);
 
   const handleCustomerInfoChange = (info: typeof customerInfo) => {
     setCustomerInfo(info);
-    if (info.name && info.email && info.phone && currentStep === 1) {
+    setPaymentError(null); // Limpar erros ao alterar dados
+    
+    const validation = validateCompleteAddress(info);
+    if (validation.isValid && currentStep === 1) {
       setCurrentStep(2);
     }
   };
 
   const handleQuantityChange = (qty: number) => {
     setQuantity(qty);
+    setPaymentError(null); // Limpar erros ao alterar quantidade
+    
+    // Verificar estoque imediatamente
+    const validation = validateStockAvailability(stockData, qty);
+    if (!validation.isAvailable) {
+      setPaymentError({
+        type: 'stock',
+        message: validation.message
+      });
+      return;
+    }
+    
     if (qty > 0 && currentStep === 2) {
       setCurrentStep(3);
     }
   };
 
-  const handleStripeCheckout = () => {
+  const validateBeforeCheckout = () => {
+    // Validar dados do formulário
     if (!isFormValid) {
-      toast({
-        title: "Dados obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
+      setPaymentError({
+        type: 'validation',
+        message: 'Por favor, preencha todos os campos obrigatórios corretamente.',
+        details: Object.values(addressValidation.errors).join(', ')
       });
       setCurrentStep(1);
-      return;
+      return false;
     }
 
+    // Validar estoque
+    if (!stockValidation.isAvailable) {
+      setPaymentError({
+        type: 'stock',
+        message: stockValidation.message
+      });
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleStripeCheckout = () => {
+    if (!validateBeforeCheckout()) return;
+
     setProcessingState('validating');
+    setPaymentError(null);
 
     setTimeout(() => {
       setProcessingState('creating-order');
@@ -120,13 +159,26 @@ const Checkout = () => {
             window.location.href = data.url;
           }, 2000);
         },
-        onError: (error) => {
+        onError: (error: any) => {
           console.error('Checkout error:', error);
           setProcessingState('idle');
-          toast({
-            title: "Erro no checkout",
-            description: "Houve um erro ao processar seu pedido. Tente novamente.",
-            variant: "destructive",
+          
+          // Categorizar o erro
+          let errorType = 'unknown';
+          let errorMessage = "Houve um erro ao processar seu pedido. Tente novamente.";
+          
+          if (error.message?.includes('network') || error.message?.includes('fetch')) {
+            errorType = 'network';
+            errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+          } else if (error.message?.includes('stripe')) {
+            errorType = 'stripe';
+            errorMessage = "Erro no sistema de pagamento. Tente novamente em alguns minutos.";
+          }
+          
+          setPaymentError({
+            type: errorType,
+            message: errorMessage,
+            details: error.message
           });
         },
       });
@@ -134,15 +186,7 @@ const Checkout = () => {
   };
 
   const handleWhatsAppCheckout = () => {
-    if (!isFormValid) {
-      toast({
-        title: "Dados obrigatórios",
-        description: "Por favor, preencha todos os campos obrigatórios.",
-        variant: "destructive",
-      });
-      setCurrentStep(1);
-      return;
-    }
+    if (!validateBeforeCheckout()) return;
 
     processOrder({
       quantity,
@@ -161,18 +205,53 @@ const Checkout = () => {
           }, 1000);
         }
       },
-      onError: (error) => {
+      onError: (error: any) => {
         console.error('WhatsApp checkout error:', error);
-        toast({
-          title: "Erro no checkout",
-          description: "Houve um erro ao processar seu pedido. Tente novamente.",
-          variant: "destructive",
+        
+        setPaymentError({
+          type: 'unknown',
+          message: "Erro ao gerar link do WhatsApp. Tente novamente.",
+          details: error.message
         });
       },
     });
   };
 
+  const handleRetryPayment = () => {
+    setPaymentError(null);
+    refetchStock(); // Revalidar estoque
+  };
+
+  const handleGoBack = () => {
+    setPaymentError(null);
+    setCurrentStep(1);
+  };
+
   const isProcessing = processingState !== 'idle';
+
+  // Mostrar erro de pagamento se houver
+  if (paymentError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl md:text-3xl font-bold text-earth-800 mb-8 pb-2 border-b-2 border-earth-300">
+              Checkout - Juba de Leão para Pets
+            </h1>
+            
+            <div className="flex justify-center items-center min-h-[400px]">
+              <PaymentErrorHandler
+                error={paymentError}
+                onRetry={handleRetryPayment}
+                onGoBack={handleGoBack}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
@@ -191,6 +270,16 @@ const Checkout = () => {
 
           <CheckoutProgress currentStep={currentStep} />
           <ProcessingStates currentState={processingState} />
+
+          {/* Alerta de estoque se necessário */}
+          {!stockValidation.isAvailable && (
+            <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="flex items-center gap-2 text-orange-800">
+                <AlertCircle className="w-5 h-5" />
+                <span className="font-medium">{stockValidation.message}</span>
+              </div>
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
@@ -214,6 +303,8 @@ const Checkout = () => {
                   quantity={quantity} 
                   onQuantityChange={handleQuantityChange} 
                   productPrice={productPrice}
+                  maxQuantity={stockData?.estoque || 100}
+                  stockMessage={stockValidation.message}
                 />
               </StepTransition>
             </div>
@@ -257,7 +348,7 @@ const Checkout = () => {
                     total={total}
                     onCheckout={handleStripeCheckout}
                     isLoading={isStripeLoading || isProcessing}
-                    isFormValid={isFormValid}
+                    isFormValid={isFormValid && stockValidation.isAvailable}
                   />
                 ) : (
                   <WhatsAppOption
@@ -265,6 +356,7 @@ const Checkout = () => {
                     total={total}
                     onWhatsAppCheckout={handleWhatsAppCheckout}
                     isLoading={isOrderLoading}
+                    isFormValid={isFormValid && stockValidation.isAvailable}
                   />
                 )}
               </div>
