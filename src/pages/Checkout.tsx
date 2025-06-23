@@ -1,7 +1,8 @@
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import ContactAddressForm from "@/components/checkout/ContactAddressForm";
@@ -9,7 +10,17 @@ import PaymentMethodSelector from "@/components/checkout/PaymentMethodSelector";
 import OrderSummary from "@/components/checkout/OrderSummary";
 import WhatsAppOption from "@/components/checkout/WhatsAppOption";
 import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
-import { useCheckoutState } from "@/hooks/useCheckoutState";
+import PaymentErrorHandler from "@/components/checkout/PaymentErrorHandler";
+import LoadingOverlay from "@/components/checkout/LoadingOverlay";
+import ProcessingStates from "@/components/checkout/ProcessingStates";
+import StepTransition from "@/components/checkout/StepTransition";
+import FormValidationIndicator from "@/components/checkout/FormValidationIndicator";
+import ProductSelector from "@/components/checkout/ProductSelector";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { useProcessOrder } from "@/hooks/useProcessOrder";
+import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
+import { useStockValidation, validateStockAvailability } from "@/hooks/useStockValidation";
+import { validateCompleteAddress } from "@/components/checkout/utils/validation";
 import { useToast } from "@/hooks/use-toast";
 
 const Checkout = () => {
@@ -48,8 +59,6 @@ const Checkout = () => {
   const { mutate: createCheckout, isPending: isStripeLoading } = useStripeCheckout();
   const { mutate: processOrder, isPending: isOrderLoading } = useProcessOrder();
   const { mutate: sendOrderEmail } = useSendOrderEmail();
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
   // Usar um product ID fixo para o produto principal
   const mainProductId = "123e4567-e89b-12d3-a456-426614174000";
