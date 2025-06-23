@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,23 +21,24 @@ import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
 import { useStockValidation, validateStockAvailability } from "@/hooks/useStockValidation";
 import { validateCompleteAddress } from "@/components/checkout/utils/validation";
 import { useToast } from "@/hooks/use-toast";
+import { useNotifications } from "@/hooks/useNotifications";
 
 const Checkout = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const notifications = useNotifications();
   const { toast } = useToast();
 
   useEffect(() => {
     // Se não está carregando e não há usuário autenticado
     if (!loading && !user) {
-      toast({
-        title: "Acesso restrito",
-        description: "Você precisa estar logado para finalizar sua compra.",
-        variant: "destructive",
-      });
+      notifications.showError(
+        "Acesso restrito",
+        "Você precisa estar logado para finalizar sua compra."
+      );
       navigate("/login?redirect=/checkout");
     }
-  }, [user, loading, navigate, toast]);
+  }, [user, loading, navigate, notifications]);
 
   const [quantity, setQuantity] = useState(1);
   const [currentStep, setCurrentStep] = useState(1);
@@ -106,21 +106,16 @@ const Checkout = () => {
   const validateBeforeCheckout = () => {
     // Validar dados do formulário
     if (!isFormValid) {
-      setPaymentError({
-        type: 'validation',
-        message: 'Por favor, preencha todos os campos obrigatórios corretamente.',
-        details: Object.values(addressValidation.errors).join(', ')
-      });
+      notifications.showValidationError(
+        'Por favor, preencha todos os campos obrigatórios corretamente.'
+      );
       setCurrentStep(1);
       return false;
     }
 
     // Validar estoque
     if (!stockValidation.isAvailable) {
-      setPaymentError({
-        type: 'stock',
-        message: stockValidation.message
-      });
+      notifications.showStockError("Extrato de Juba de Leão");
       return false;
     }
 
@@ -129,6 +124,9 @@ const Checkout = () => {
 
   const handleStripeCheckout = () => {
     if (!validateBeforeCheckout()) return;
+
+    const loadingId = 'checkout-process';
+    notifications.showLoading(loadingId, 'Processando pedido', 'Criando sua sessão de pagamento...');
 
     setProcessingState('validating');
     setPaymentError(null);
@@ -168,10 +166,8 @@ const Checkout = () => {
             }
           });
           
-          toast({
-            title: "Pedido criado com sucesso!",
-            description: "Redirecionando para o pagamento...",
-          });
+          notifications.hideLoading(loadingId);
+          notifications.showOrderCreated(orderNumber);
           
           setTimeout(() => {
             window.location.href = data.url;
@@ -180,22 +176,20 @@ const Checkout = () => {
         onError: (error: any) => {
           console.error('Checkout error:', error);
           setProcessingState('idle');
+          notifications.hideLoading(loadingId);
           
-          // Categorizar o erro
-          let errorType = 'unknown';
-          let errorMessage = "Houve um erro ao processar seu pedido. Tente novamente.";
-          
+          // Categorizar o erro usando o sistema de notificações
           if (error.message?.includes('network') || error.message?.includes('fetch')) {
-            errorType = 'network';
-            errorMessage = "Erro de conexão. Verifique sua internet e tente novamente.";
+            notifications.showNetworkError();
           } else if (error.message?.includes('stripe')) {
-            errorType = 'stripe';
-            errorMessage = "Erro no sistema de pagamento. Tente novamente em alguns minutos.";
+            notifications.showPaymentError("Erro no sistema de pagamento. Tente novamente em alguns minutos.");
+          } else {
+            notifications.showPaymentError();
           }
           
           setPaymentError({
-            type: errorType,
-            message: errorMessage,
+            type: 'unknown',
+            message: "Houve um erro ao processar seu pedido. Tente novamente.",
             details: error.message
           });
         },
@@ -213,10 +207,10 @@ const Checkout = () => {
     }, {
       onSuccess: (data) => {
         if (data.whatsappLink) {
-          toast({
-            title: "Redirecionando para WhatsApp",
-            description: "Você será direcionado para finalizar o pedido.",
-          });
+          notifications.showInfo(
+            "Redirecionando para WhatsApp",
+            "Você será direcionado para finalizar o pedido."
+          );
           
           setTimeout(() => {
             window.open(data.whatsappLink, '_blank');
@@ -225,6 +219,11 @@ const Checkout = () => {
       },
       onError: (error: any) => {
         console.error('WhatsApp checkout error:', error);
+        
+        notifications.showError(
+          "Erro no WhatsApp",
+          "Erro ao gerar link do WhatsApp. Tente novamente."
+        );
         
         setPaymentError({
           type: 'unknown',
