@@ -12,7 +12,8 @@ interface OrderEmailData {
     quantity: number
     price: number
   }>
-  emailType?: 'confirmation' | 'payment_success' | 'payment_failed'
+  emailType?: 'confirmation' | 'payment_success' | 'payment_failed' | 'whatsapp_created'
+  whatsappLink?: string
 }
 
 export const useSendOrderEmail = () => {

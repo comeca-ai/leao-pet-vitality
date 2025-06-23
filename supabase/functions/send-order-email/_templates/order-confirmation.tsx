@@ -5,12 +5,13 @@ import {
   Head,
   Heading,
   Html,
+  Link,
   Preview,
   Text,
   Section,
   Row,
   Column,
-  Hr,
+  Button,
 } from 'npm:@react-email/components@0.0.22'
 import * as React from 'npm:react@18.3.1'
 
@@ -24,6 +25,8 @@ interface OrderConfirmationEmailProps {
     price: number
   }>
   customerEmail: string
+  emailType?: 'confirmation' | 'payment_success' | 'payment_failed' | 'whatsapp_created'
+  whatsappLink?: string
 }
 
 export const OrderConfirmationEmail = ({
@@ -31,219 +34,249 @@ export const OrderConfirmationEmail = ({
   orderNumber,
   orderTotal,
   orderItems,
-  customerEmail,
-}: OrderConfirmationEmailProps) => (
-  <Html>
-    <Head />
-    <Preview>Confirmação do seu pedido #{orderNumber} - Juba de Leão</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={h1}>✅ Pedido Confirmado!</Heading>
-        
-        <Text style={text}>
-          Olá {customerName},
-        </Text>
-        
-        <Text style={text}>
-          Obrigado pela sua compra! Seu pedido foi confirmado e está sendo processado.
-        </Text>
+  emailType = 'confirmation',
+  whatsappLink,
+}: OrderConfirmationEmailProps) => {
+  const getTitle = () => {
+    switch (emailType) {
+      case 'payment_success':
+        return '✅ Pagamento Confirmado!'
+      case 'payment_failed':
+        return '❌ Problema no Pagamento'
+      case 'whatsapp_created':
+        return '📱 Pedido via WhatsApp Criado'
+      default:
+        return '🛒 Pedido Confirmado!'
+    }
+  }
 
-        <Section style={orderBox}>
-          <Text style={orderTitle}>Pedido #{orderNumber}</Text>
-          <Text style={orderSubtitle}>Para: {customerEmail}</Text>
+  const getMessage = () => {
+    switch (emailType) {
+      case 'payment_success':
+        return 'Seu pagamento foi processado com sucesso! Seu pedido será preparado e enviado em breve.'
+      case 'payment_failed':
+        return 'Houve um problema com seu pagamento. Entre em contato conosco para resolver.'
+      case 'whatsapp_created':
+        return 'Recebemos sua solicitação via WhatsApp. Nossa equipe entrará em contato em breve para finalizar seu pedido.'
+      default:
+        return 'Obrigado por sua compra! Seu pedido foi recebido e está sendo processado.'
+    }
+  }
+
+  return (
+    <Html>
+      <Head />
+      <Preview>{getTitle()} - Pedido #{orderNumber}</Preview>
+      <Body style={main}>
+        <Container style={container}>
+          <Heading style={h1}>{getTitle()}</Heading>
           
-          <Hr style={hr} />
+          <Text style={text}>Olá {customerName},</Text>
           
-          {orderItems.map((item, index) => (
-            <Row key={index} style={itemRow}>
-              <Column style={itemName}>
-                <Text style={itemText}>{item.name}</Text>
-                <Text style={itemQuantity}>Quantidade: {item.quantity}</Text>
-              </Column>
-              <Column style={itemPrice}>
-                <Text style={itemText}>R$ {item.price.toFixed(2).replace('.', ',')}</Text>
+          <Text style={text}>{getMessage()}</Text>
+          
+          <Section style={orderBox}>
+            <Heading style={h2}>Detalhes do Pedido #{orderNumber}</Heading>
+            
+            {orderItems.map((item, index) => (
+              <Row key={index} style={itemRow}>
+                <Column style={itemColumn}>
+                  <Text style={itemText}>{item.name}</Text>
+                  <Text style={itemSubtext}>Quantidade: {item.quantity}</Text>
+                </Column>
+                <Column style={priceColumn}>
+                  <Text style={priceText}>
+                    R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                  </Text>
+                </Column>
+              </Row>
+            ))}
+            
+            <Row style={totalRow}>
+              <Column>
+                <Text style={totalText}>Total: R$ {orderTotal.toFixed(2).replace('.', ',')}</Text>
               </Column>
             </Row>
-          ))}
-          
-          <Hr style={hr} />
-          
-          <Row style={totalRow}>
-            <Column>
-              <Text style={totalText}>Total: R$ {orderTotal.toFixed(2).replace('.', ',')}</Text>
-            </Column>
-          </Row>
-        </Section>
+          </Section>
 
-        <Section style={nextStepsBox}>
-          <Heading style={h2}>📦 Próximos Passos</Heading>
-          
-          <Text style={stepText}>
-            <strong>1. Processamento:</strong> Seu pedido será processado em até 2 dias úteis.
+          {emailType === 'whatsapp_created' && whatsappLink && (
+            <Section style={whatsappSection}>
+              <Text style={text}>
+                Para finalizar seu pedido, clique no botão abaixo para continuar no WhatsApp:
+              </Text>
+              <Button style={whatsappButton} href={whatsappLink}>
+                Continuar no WhatsApp
+              </Button>
+            </Section>
+          )}
+
+          {emailType === 'payment_success' && (
+            <Section style={successSection}>
+              <Text style={text}>
+                <strong>Próximos passos:</strong>
+              </Text>
+              <Text style={text}>
+                • Seu pedido será preparado em até 2 dias úteis<br />
+                • Você receberá o código de rastreamento por email<br />
+                • Prazo de entrega: 5-10 dias úteis
+              </Text>
+            </Section>
+          )}
+
+          <Section style={contactSection}>
+            <Text style={text}>
+              <strong>Precisa de ajuda?</strong><br />
+              WhatsApp: (11) 99999-9999<br />
+              Email: contato@jubadeleaopets.com
+            </Text>
+          </Section>
+
+          <Text style={footer}>
+            Atenciosamente,<br />
+            Equipe Juba de Leão para Pets
           </Text>
-          
-          <Text style={stepText}>
-            <strong>2. Envio:</strong> Você receberá o código de rastreamento por e-mail.
-          </Text>
-          
-          <Text style={stepText}>
-            <strong>3. Entrega:</strong> O produto chegará em 5-7 dias úteis após o envio.
-          </Text>
-        </Section>
+        </Container>
+      </Body>
+    </Html>
+  )
+}
 
-        <Text style={supportText}>
-          Dúvidas? Entre em contato conosco pelo WhatsApp: (11) 99999-9999
-        </Text>
-
-        <Text style={footer}>
-          Juba de Leão para Pets<br />
-          O melhor cuidado natural para seu pet
-        </Text>
-      </Container>
-    </Body>
-  </Html>
-)
-
-export default OrderConfirmationEmail
-
+// Styles
 const main = {
   backgroundColor: '#f6f9fc',
-  padding: '20px 0',
+  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
 }
 
 const container = {
   backgroundColor: '#ffffff',
-  border: '1px solid #f0f0f0',
-  borderRadius: '8px',
   margin: '0 auto',
-  padding: '40px',
-  maxWidth: '600px',
+  padding: '20px 0 48px',
+  marginBottom: '64px',
 }
 
 const h1 = {
-  color: '#2c5530',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '28px',
+  color: '#333',
+  fontSize: '24px',
   fontWeight: 'bold',
-  margin: '0 0 20px 0',
+  margin: '40px 0',
+  padding: '0',
   textAlign: 'center' as const,
 }
 
 const h2 = {
-  color: '#2c5530',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '20px',
+  color: '#333',
+  fontSize: '18px',
   fontWeight: 'bold',
-  margin: '0 0 15px 0',
+  margin: '20px 0 10px',
 }
 
 const text = {
-  color: '#333333',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '16px',
+  color: '#333',
+  fontSize: '14px',
   lineHeight: '24px',
-  margin: '0 0 15px 0',
+  margin: '16px 0',
 }
 
 const orderBox = {
-  backgroundColor: '#f8fdf9',
-  border: '2px solid #e8f5e8',
+  backgroundColor: '#f8f9fa',
+  border: '1px solid #e9ecef',
   borderRadius: '8px',
-  padding: '24px',
-  margin: '24px 0',
-}
-
-const orderTitle = {
-  color: '#2c5530',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '20px',
-  fontWeight: 'bold',
-  margin: '0 0 5px 0',
-}
-
-const orderSubtitle = {
-  color: '#666666',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '14px',
-  margin: '0 0 15px 0',
-}
-
-const hr = {
-  border: 'none',
-  borderTop: '1px solid #e8f5e8',
-  margin: '15px 0',
+  padding: '20px',
+  margin: '20px 0',
 }
 
 const itemRow = {
-  margin: '10px 0',
+  borderBottom: '1px solid #e9ecef',
+  paddingBottom: '10px',
+  marginBottom: '10px',
 }
 
-const itemName = {
-  verticalAlign: 'top' as const,
+const itemColumn = {
+  width: '70%',
 }
 
-const itemPrice = {
+const priceColumn = {
+  width: '30%',
   textAlign: 'right' as const,
-  verticalAlign: 'top' as const,
 }
 
 const itemText = {
-  color: '#333333',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+  color: '#333',
   fontSize: '14px',
+  fontWeight: 'bold',
   margin: '0',
 }
 
-const itemQuantity = {
-  color: '#666666',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+const itemSubtext = {
+  color: '#666',
   fontSize: '12px',
-  margin: '2px 0 0 0',
+  margin: '4px 0 0 0',
+}
+
+const priceText = {
+  color: '#333',
+  fontSize: '14px',
+  fontWeight: 'bold',
+  margin: '0',
 }
 
 const totalRow = {
-  margin: '15px 0 0 0',
+  borderTop: '2px solid #333',
+  paddingTop: '10px',
+  marginTop: '10px',
 }
 
 const totalText = {
-  color: '#2c5530',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '18px',
+  color: '#333',
+  fontSize: '16px',
   fontWeight: 'bold',
-  margin: '0',
   textAlign: 'right' as const,
+  margin: '0',
 }
 
-const nextStepsBox = {
-  backgroundColor: '#fff7ed',
-  border: '2px solid #fed7aa',
+const whatsappSection = {
+  backgroundColor: '#e8f5e8',
+  border: '1px solid #4caf50',
   borderRadius: '8px',
-  padding: '24px',
-  margin: '24px 0',
-}
-
-const stepText = {
-  color: '#333333',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '0 0 10px 0',
-}
-
-const supportText = {
-  color: '#666666',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '30px 0 20px 0',
+  padding: '20px',
+  margin: '20px 0',
   textAlign: 'center' as const,
+}
+
+const whatsappButton = {
+  backgroundColor: '#25d366',
+  borderRadius: '6px',
+  color: '#fff',
+  fontSize: '16px',
+  textDecoration: 'none',
+  textAlign: 'center' as const,
+  display: 'block',
+  padding: '12px 20px',
+  margin: '10px auto',
+}
+
+const successSection = {
+  backgroundColor: '#e8f5e8',
+  border: '1px solid #4caf50',
+  borderRadius: '8px',
+  padding: '20px',
+  margin: '20px 0',
+}
+
+const contactSection = {
+  backgroundColor: '#fff3cd',
+  border: '1px solid #ffeaa7',
+  borderRadius: '8px',
+  padding: '20px',
+  margin: '20px 0',
 }
 
 const footer = {
-  color: '#999999',
-  fontFamily: 'system-ui, -apple-system, sans-serif',
+  color: '#8898aa',
   fontSize: '12px',
-  lineHeight: '18px',
-  margin: '30px 0 0 0',
+  lineHeight: '16px',
   textAlign: 'center' as const,
+  margin: '40px 0 0 0',
 }
+
+export default OrderConfirmationEmail

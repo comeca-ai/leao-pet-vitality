@@ -20,7 +20,8 @@ interface OrderEmailRequest {
     quantity: number;
     price: number;
   }>;
-  emailType?: 'confirmation' | 'payment_success' | 'payment_failed';
+  emailType?: 'confirmation' | 'payment_success' | 'payment_failed' | 'whatsapp_created';
+  whatsappLink?: string;
 }
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY') as string);
@@ -44,7 +45,8 @@ serve(async (req) => {
       orderNumber,
       orderTotal,
       orderItems,
-      emailType = 'confirmation'
+      emailType = 'confirmation',
+      whatsappLink
     }: OrderEmailRequest = await req.json();
 
     console.log('Sending order email:', {
@@ -69,6 +71,8 @@ serve(async (req) => {
         orderTotal,
         orderItems,
         customerEmail,
+        emailType,
+        whatsappLink,
       })
     );
 
@@ -83,6 +87,9 @@ serve(async (req) => {
         break;
       case 'payment_failed':
         subject = `❌ Problema no Pagamento #${orderNumber} - Juba de Leão`;
+        break;
+      case 'whatsapp_created':
+        subject = `📱 Pedido via WhatsApp #${orderNumber} - Juba de Leão`;
         break;
       default:
         subject = `Pedido #${orderNumber} - Juba de Leão`;
