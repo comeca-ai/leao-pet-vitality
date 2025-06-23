@@ -1,6 +1,7 @@
 
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 interface NotificationOptions {
   title: string;
@@ -37,10 +38,11 @@ export const useNotifications = () => {
       description,
       variant: toastVariant,
       duration,
-      action: action ? {
-        onClick: action.onClick,
-        children: action.label,
-      } : undefined,
+      action: action ? (
+        <ToastAction onClick={action.onClick}>
+          {action.label}
+        </ToastAction>
+      ) : undefined,
     });
   }, [toast]);
 
