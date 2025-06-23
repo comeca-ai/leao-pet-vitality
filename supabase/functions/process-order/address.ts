@@ -5,16 +5,20 @@ export async function handleAddress(supabase: any, userId: string, addressData: 
   console.log('[PROCESS-ORDER] Processing address for user:', userId)
   
   try {
-    // Primeiro, verificar se já existe um endereço para este usuário
+    // Verificar se já existe um endereço EXATAMENTE igual para este usuário
     const { data: existingAddresses, error: checkError } = await supabase
       .from('addresses')
       .select('*')
       .eq('user_id', userId)
       .eq('cep', addressData.cep)
       .eq('rua', addressData.rua)
+      .eq('numero', addressData.numero || '0')
+      .eq('bairro', addressData.bairro || 'Centro')
+      .eq('cidade', addressData.cidade)
+      .eq('estado', addressData.estado || 'SP')
       .limit(1)
 
-    if (checkError) {
+    if (checkError && checkError.code !== 'PGRST116') {
       console.log('[PROCESS-ORDER] Error checking existing address:', checkError)
       throw checkError
     }
@@ -25,8 +29,18 @@ export async function handleAddress(supabase: any, userId: string, addressData: 
       // Usar endereço existente
       addressId = existingAddresses[0].id
       console.log('[PROCESS-ORDER] Using existing address:', addressId)
+      
+      // Atualizar telefone se necessário
+      if (existingAddresses[0].telefone !== addressData.telefone) {
+        await supabase
+          .from('addresses')
+          .update({ telefone: addressData.telefone })
+          .eq('id', addressId)
+        
+        console.log('[PROCESS-ORDER] Updated phone for existing address')
+      }
     } else {
-      // Criar novo endereço
+      // Criar novo endereço apenas se não existir
       const { data: newAddress, error: addressError } = await supabase
         .from('addresses')
         .insert({

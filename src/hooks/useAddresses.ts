@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase, Address } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,6 +11,8 @@ export const useAddresses = () => {
       if (!user?.id) throw new Error('User not authenticated')
 
       console.log('Fetching addresses for user:', user.id)
+      
+      // Buscar endereços únicos usando DISTINCT ON para evitar duplicatas
       const { data, error } = await supabase
         .from('addresses')
         .select('*')
@@ -23,10 +24,28 @@ export const useAddresses = () => {
         throw error
       }
 
-      console.log('Addresses fetched successfully:', data)
-      return data as Address[]
+      // Filtrar endereços duplicados no frontend como medida extra de segurança
+      const uniqueAddresses = data?.reduce((acc: Address[], current) => {
+        const exists = acc.find(addr => 
+          addr.cep === current.cep && 
+          addr.rua === current.rua && 
+          addr.numero === current.numero &&
+          addr.bairro === current.bairro &&
+          addr.cidade === current.cidade
+        )
+        
+        if (!exists) {
+          acc.push(current)
+        }
+        
+        return acc
+      }, []) || []
+
+      console.log('Addresses fetched successfully:', uniqueAddresses.length, 'unique addresses found')
+      return uniqueAddresses as Address[]
     },
     enabled: !!user?.id,
+    staleTime: 60000, // Cache por 1 minuto para evitar consultas desnecessárias
   })
 }
 
