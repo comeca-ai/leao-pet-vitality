@@ -1,24 +1,84 @@
-
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Package, Truck, MessageCircle, Home } from "lucide-react";
+import { CheckCircle, Package, Truck, MessageCircle, Home, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Header from "@/components/Header";
 
 const Confirmacao = () => {
-  // Dados simulados do pedido
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session_id');
+  const [isLoading, setIsLoading] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'error'>('loading');
+
+  // Dados simulados do pedido - em produção, buscar do Stripe/Supabase
   const pedido = {
-    numero: "JL-2024-001",
+    numero: sessionId ? sessionId.slice(-8).toUpperCase() : "JL-2024-001",
     produto: "Extrato de Juba de Leão 30ml",
     quantidade: 1,
-    preco: 89.90,
+    preco: 49.90,
     frete: 0,
-    total: 89.90,
-    pagamento: "PIX",
+    total: 49.90,
+    pagamento: "Cartão de Crédito",
     status: "Confirmado"
   };
+
+  useEffect(() => {
+    // Simular verificação do pagamento
+    const timer = setTimeout(() => {
+      setPaymentStatus('success');
+      setIsLoading(false);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [sessionId]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
+              <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
+            </div>
+            <h1 className="text-3xl font-bold text-earth-800 mb-2">
+              Processando seu pagamento...
+            </h1>
+            <p className="text-xl text-earth-600">
+              Aguarde um momento enquanto confirmamos seu pedido.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (paymentStatus === 'error') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-3xl mx-auto text-center">
+            <h1 className="text-3xl font-bold text-red-600 mb-4">
+              Erro no pagamento
+            </h1>
+            <p className="text-xl text-earth-600 mb-6">
+              Houve um problema com seu pagamento. Tente novamente.
+            </p>
+            <Link to="/checkout">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                Voltar ao Checkout
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
@@ -28,23 +88,23 @@ const Confirmacao = () => {
         <div className="max-w-3xl mx-auto">
           {/* Mensagem de Sucesso */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-leaf-100 rounded-full mb-4">
-              <CheckCircle className="w-12 h-12 text-leaf-600" />
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+              <CheckCircle className="w-12 h-12 text-green-600" />
             </div>
             <h1 className="text-3xl md:text-4xl font-bold text-earth-800 mb-2">
-              Pedido Confirmado!
+              Pagamento Confirmado!
             </h1>
             <p className="text-xl text-earth-600 mb-2">
               Obrigado pela sua compra!
             </p>
-            <Badge className="bg-leaf-100 text-leaf-700 px-4 py-2 text-base">
+            <Badge className="bg-green-100 text-green-700 px-4 py-2 text-base">
               Pedido #{pedido.numero}
             </Badge>
           </div>
 
           {/* Resumo do Pedido */}
           <Card className="border-earth-200 shadow-lg mb-6">
-            <CardHeader className="bg-leaf-50 border-b border-leaf-200">
+            <CardHeader className="bg-green-50 border-b border-green-200">
               <CardTitle className="text-earth-800 flex items-center gap-2">
                 <Package className="w-5 h-5" />
                 Resumo do Pedido
@@ -82,11 +142,7 @@ const Confirmacao = () => {
                   <div className="flex justify-between">
                     <span className="text-earth-600">Frete:</span>
                     <span className="text-earth-800">
-                      {pedido.frete === 0 ? (
-                        <Badge className="bg-leaf-100 text-leaf-700">Grátis</Badge>
-                      ) : (
-                        `R$ ${pedido.frete.toFixed(2).replace('.', ',')}`
-                      )}
+                      <Badge className="bg-green-100 text-green-700">Grátis</Badge>
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -98,16 +154,16 @@ const Confirmacao = () => {
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span className="text-earth-800">Total:</span>
-                    <span className="text-leaf-600">R$ {pedido.total.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-green-600">R$ {pedido.total.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Orientações */}
+          {/* Próximos Passos */}
           <Card className="border-earth-200 shadow-lg mb-6">
-            <CardHeader className="bg-leaf-50 border-b border-leaf-200">
+            <CardHeader className="bg-blue-50 border-b border-blue-200">
               <CardTitle className="text-earth-800 flex items-center gap-2">
                 <Truck className="w-5 h-5" />
                 Próximos Passos
@@ -152,7 +208,7 @@ const Confirmacao = () => {
                 </div>
               </div>
 
-              <div className="mt-6 p-4 bg-leaf-50 rounded-lg border border-leaf-200">
+              <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
                 <h4 className="font-semibold text-earth-800 mb-2">Dúvidas ou Problemas?</h4>
                 <p className="text-earth-600 text-sm mb-3">
                   Entre em contato conosco pelo WhatsApp para acompanhar seu pedido ou tirar dúvidas.
@@ -178,7 +234,7 @@ const Confirmacao = () => {
             </Link>
             
             <Button 
-              className="bg-leaf-600 hover:bg-leaf-700 text-white px-8 py-3 rounded-full"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full"
               onClick={() => window.print()}
             >
               Imprimir Pedido

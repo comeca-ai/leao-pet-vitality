@@ -3,3 +3,6 @@ project_id = "wezlahokdkfhaveylnxo"
 
 [functions.process-order]
 verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = false

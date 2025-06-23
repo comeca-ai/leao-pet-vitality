@@ -4,33 +4,59 @@ import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import ContactAddressForm from "@/components/checkout/ContactAddressForm";
 import ProductSelector from "@/components/checkout/ProductSelector";
-import PaymentMethodSelector from "@/components/checkout/PaymentMethodSelector";
-import OrderSummary from "@/components/checkout/OrderSummary";
+import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { useToast } from "@/hooks/use-toast";
 
 const Checkout = () => {
   const [quantity, setQuantity] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState("");
+  const [customerInfo, setCustomerInfo] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: {
+      street: "",
+      city: "",
+      zipCode: "",
+    },
+  });
+
+  const { mutate: createCheckout, isPending } = useStripeCheckout();
+  const { toast } = useToast();
   const navigate = useNavigate();
 
-  const productPrice = 89.90;
-  const shipping = 0.00;
-  const total = (productPrice * quantity) + shipping;
+  const productPrice = 49.90;
+  const total = productPrice * quantity;
 
-  const handleFinalizePedido = () => {
-    navigate("/confirmacao");
-  };
+  const handleCheckout = () => {
+    // Validate required fields
+    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+      toast({
+        title: "Dados obrigatórios",
+        description: "Por favor, preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const handleWhatsAppCheckout = () => {
-    const message = `Olá! Gostaria de finalizar minha compra:
-    
-Produto: Juba de Leão para Pets
-Quantidade: ${quantity}
-Valor: R$ ${total.toFixed(2).replace('.', ',')}
-
-Aguardo retorno para finalizar o pedido!`;
-    
-    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    createCheckout({
+      quantity,
+      customerInfo,
+    }, {
+      onSuccess: (data) => {
+        console.log('Redirecting to Stripe checkout:', data.url);
+        // Redirect to Stripe checkout
+        window.location.href = data.url;
+      },
+      onError: (error) => {
+        console.error('Checkout error:', error);
+        toast({
+          title: "Erro no checkout",
+          description: "Houve um erro ao processar seu pedido. Tente novamente.",
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
@@ -45,25 +71,23 @@ Aguardo retorno para finalizar o pedido!`;
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-              <ContactAddressForm />
+              <ContactAddressForm 
+                customerInfo={customerInfo}
+                onCustomerInfoChange={setCustomerInfo}
+              />
               <ProductSelector 
                 quantity={quantity} 
                 onQuantityChange={setQuantity} 
-              />
-              <PaymentMethodSelector 
-                paymentMethod={paymentMethod} 
-                onPaymentMethodChange={setPaymentMethod} 
+                productPrice={productPrice}
               />
             </div>
 
-            <OrderSummary
+            <StripeOrderSummary
               quantity={quantity}
               productPrice={productPrice}
-              shipping={shipping}
               total={total}
-              paymentMethod={paymentMethod}
-              onFinalizePedido={handleFinalizePedido}
-              onWhatsAppCheckout={handleWhatsAppCheckout}
+              onCheckout={handleCheckout}
+              isLoading={isPending}
             />
           </div>
         </div>

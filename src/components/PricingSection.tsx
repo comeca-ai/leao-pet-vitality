@@ -3,14 +3,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Check, Crown, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const PricingSection = () => {
+  const navigate = useNavigate();
+
   const plans = [
     {
-      name: "Teste",
+      name: "1 Unidade",
       subtitle: "Para experimentar",
-      price: "129",
-      originalPrice: "149",
+      price: "49,90",
+      originalPrice: "59,90",
       bottles: 1,
       duration: "30 dias",
       savings: null,
@@ -24,13 +27,13 @@ const PricingSection = () => {
       ]
     },
     {
-      name: "Tratamento",
+      name: "3 Unidades",
       subtitle: "Mais vendido",
-      price: "219",
-      originalPrice: "387",
+      price: "134,70",
+      originalPrice: "179,70",
       bottles: 3,
       duration: "90 dias",
-      savings: "Economize R$ 168",
+      savings: "Economize R$ 45,00",
       popular: true,
       features: [
         "3 frascos de 30ml",
@@ -42,13 +45,13 @@ const PricingSection = () => {
       ]
     },
     {
-      name: "Máximo",
+      name: "5 Unidades",
       subtitle: "Melhor custo-benefício",
-      price: "349",
-      originalPrice: "645",
+      price: "199,60",
+      originalPrice: "299,50",
       bottles: 5,
       duration: "150 dias",
-      savings: "Economize R$ 296",
+      savings: "Economize R$ 99,90",
       popular: false,
       features: [
         "5 frascos de 30ml",
@@ -62,6 +65,12 @@ const PricingSection = () => {
     }
   ];
 
+  const handleBuyNow = (quantity: number) => {
+    // Store quantity in localStorage and navigate to checkout
+    localStorage.setItem('checkoutQuantity', quantity.toString());
+    navigate('/checkout');
+  };
+
   return (
     <section id="precos" className="py-16 md:py-24 bg-white">
       <div className="container mx-auto px-4">
@@ -70,8 +79,8 @@ const PricingSection = () => {
             Oferta Especial
           </Badge>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-earth-800">
-            Escolha o melhor{" "}
-            <span className="text-leaf-600">plano</span> para seu pet
+            Escolha a melhor{" "}
+            <span className="text-leaf-600">quantidade</span> para seu pet
           </h2>
           <p className="text-xl text-earth-600 max-w-3xl mx-auto">
             Quanto mais você cuida da saúde do seu pet, mais você economiza. 
@@ -116,7 +125,7 @@ const PricingSection = () => {
                       )}
                     </div>
                   </div>
-                  <p className="text-earth-600">ou em até 3x no cartão</p>
+                  <p className="text-earth-600">Pagamento via Stripe</p>
                   <div className="bg-earth-100 rounded-lg p-2">
                     <p className="text-sm text-earth-700">
                       {plan.bottles} frasco{plan.bottles > 1 ? 's' : ''} • {plan.duration}
@@ -141,6 +150,7 @@ const PricingSection = () => {
                       ? 'bg-leaf-600 hover:bg-leaf-700 text-white shadow-lg hover:shadow-xl'
                       : 'bg-earth-600 hover:bg-earth-700 text-white'
                   }`}
+                  onClick={() => handleBuyNow(plan.bottles)}
                 >
                   Comprar Agora
                 </Button>
@@ -162,14 +172,10 @@ const PricingSection = () => {
               <h3 className="text-2xl font-bold text-earth-800">
                 Formas de Pagamento
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <p className="font-medium text-earth-800">PIX</p>
-                  <p className="text-sm text-earth-600">Desconto de 5%</p>
-                </div>
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <p className="font-medium text-earth-800">Cartão</p>
-                  <p className="text-sm text-earth-600">Até 3x sem juros</p>
+                  <p className="font-medium text-earth-800">Stripe Checkout</p>
+                  <p className="text-sm text-earth-600">Cartão, PIX e boleto</p>
                 </div>
               </div>
             </div>
@@ -189,7 +195,7 @@ const PricingSection = () => {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="text-earth-700">Suporte dedicado</span>
+                  <span className="text-earth-700">Pagamento 100% seguro</span>
                 </div>
               </div>
             </div>

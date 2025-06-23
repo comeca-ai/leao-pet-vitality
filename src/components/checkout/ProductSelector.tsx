@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 interface ProductSelectorProps {
   quantity: number;
   onQuantityChange: (quantity: number) => void;
+  productPrice: number;
 }
 
-const ProductSelector = ({ quantity, onQuantityChange }: ProductSelectorProps) => {
+const ProductSelector = ({ quantity, onQuantityChange, productPrice }: ProductSelectorProps) => {
   return (
     <div>
       <h2 className="text-xl font-semibold text-earth-800 mb-4">
@@ -22,6 +23,7 @@ const ProductSelector = ({ quantity, onQuantityChange }: ProductSelectorProps) =
         </div>
         <div className="flex-1">
           <p className="text-earth-800 font-medium mb-2">Juba de Leão para Pets</p>
+          <p className="text-earth-600 text-sm mb-3">R$ {productPrice.toFixed(2).replace('.', ',')} por unidade</p>
           <div className="flex items-center gap-3">
             <Label className="text-earth-700">Quantidade:</Label>
             <Input 
@@ -32,6 +34,9 @@ const ProductSelector = ({ quantity, onQuantityChange }: ProductSelectorProps) =
               className="w-20 border-earth-300" 
             />
           </div>
+          <p className="text-earth-600 text-sm mt-2">
+            Subtotal: R$ {(productPrice * quantity).toFixed(2).replace('.', ',')}
+          </p>
         </div>
       </div>
     </div>
