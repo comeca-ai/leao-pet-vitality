@@ -63,7 +63,7 @@ export const useStripeCheckout = () => {
         throw orderError
       }
 
-      // Agora criar a sessão do Stripe
+      // Agora criar a sessão do Stripe com URLs corretas
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: {
           orderId: orderResponse.order.id,
@@ -78,6 +78,9 @@ export const useStripeCheckout = () => {
       }
 
       console.log('Checkout created successfully:', data)
+      console.log('Configured success URL:', `${window.location.origin}/confirmacao?session_id={CHECKOUT_SESSION_ID}`)
+      console.log('Configured cancel URL:', `${window.location.origin}/checkout`)
+      
       return data as CheckoutResponse
     },
   })

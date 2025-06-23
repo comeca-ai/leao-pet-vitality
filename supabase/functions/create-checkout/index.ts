@@ -114,13 +114,17 @@ serve(async (req) => {
 
     console.log('Creating Stripe session with', lineItems.length, 'items')
 
-    // Criar sessão do Stripe Checkout
+    // Obter o origin da requisição para construir URLs corretas
+    const origin = req.headers.get('origin') || 'http://localhost:5173'
+    console.log('Request origin:', origin)
+
+    // Criar sessão do Stripe Checkout com URLs corretas
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card', 'boleto'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: successUrl,
-      cancel_url: cancelUrl,
+      success_url: `${origin}/confirmacao?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/checkout`,
       metadata: {
         order_id: orderId,
         user_id: user.id,
@@ -137,6 +141,8 @@ serve(async (req) => {
     })
 
     console.log('Stripe session created successfully:', session.id)
+    console.log('Success URL configured:', `${origin}/confirmacao?session_id={CHECKOUT_SESSION_ID}`)
+    console.log('Cancel URL configured:', `${origin}/checkout`)
 
     // Atualizar o pedido com o status e payment_intent_id se disponível
     const updateData: any = {
