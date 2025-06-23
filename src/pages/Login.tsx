@@ -1,70 +1,65 @@
 
 import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Loader2, Mail, Lock } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
-  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    senha: ""
-  });
-
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect') || '/';
+  
   const { signIn, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Redirecionar se já estiver logado
+  // Redirecionar se já estiver autenticado
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate(redirect);
     }
-  }, [user, navigate]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  }, [user, navigate, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { data, error } = await signIn(formData.email, formData.senha);
+      const { error } = await signIn(email, password);
       
       if (error) {
+        if (error.message.includes("Invalid login credentials")) {
+          toast({
+            title: "Erro no login",
+            description: "E-mail ou senha incorretos. Verifique seus dados e tente novamente.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Erro no login",
+            description: error.message,
+            variant: "destructive",
+          });
+        }
+      } else {
         toast({
-          title: "Erro no login",
-          description: error.message === "Invalid login credentials" 
-            ? "E-mail ou senha incorretos" 
-            : error.message,
-          variant: "destructive",
+          title: "Login realizado!",
+          description: "Bem-vindo de volta!",
         });
-        return;
+        navigate(redirect);
       }
-
-      toast({
-        title: "Login realizado!",
-        description: "Bem-vindo de volta!",
-      });
-
-      // Redirecionar para a página inicial
-      navigate("/");
     } catch (error) {
       toast({
-        title: "Erro",
-        description: "Ocorreu um erro inesperado. Tente novamente.",
+        title: "Erro inesperado",
+        description: "Ocorreu um erro. Tente novamente.",
         variant: "destructive",
       });
     } finally {
@@ -73,78 +68,78 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-cream-50 to-earth-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="flex items-center justify-center mb-8">
-          <Link to="/" className="flex items-center space-x-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-earth-500 to-leaf-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">JL</span>
-            </div>
-            <div className="font-bold text-xl text-earth-700">
-              Juba de Leão <span className="text-leaf-600">Pets</span>
-            </div>
+        {/* Header com botão voltar */}
+        <div className="mb-6">
+          <Link 
+            to="/" 
+            className="inline-flex items-center text-earth-600 hover:text-leaf-600 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar ao início
           </Link>
         </div>
 
         <Card className="border-earth-200 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-earth-700">
-              Entrar
+            <CardTitle className="text-2xl font-bold text-earth-800">
+              Fazer Login
             </CardTitle>
             <CardDescription className="text-earth-600">
-              Acesse sua conta
+              Entre com sua conta para continuar sua compra
             </CardDescription>
+            {redirect === '/checkout' && (
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700 font-medium">
+                  🛒 Você precisa estar logado para finalizar sua compra
+                </p>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-earth-700 font-medium">
+                <Label htmlFor="email" className="text-earth-700">
                   E-mail
                 </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Digite seu e-mail"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="senha" className="text-earth-700 font-medium">
-                  Senha
-                </Label>
                 <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-earth-400" />
                   <Input
-                    id="senha"
-                    name="senha"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
-                    value={formData.senha}
-                    onChange={handleInputChange}
-                    className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500 pr-10"
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
+                    className="pl-10 border-earth-200 focus:border-leaf-500"
                     disabled={isLoading}
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700 disabled:opacity-50"
-                    disabled={isLoading}
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-earth-700">
+                  Senha
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-earth-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="pl-10 border-earth-200 focus:border-leaf-500"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+
+              <Button 
+                type="submit" 
+                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white py-2.5"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -156,39 +151,34 @@ const Login = () => {
                   "Entrar"
                 )}
               </Button>
+
+              <div className="text-center">
+                <Link 
+                  to="/recuperar-senha" 
+                  className="text-sm text-leaf-600 hover:text-leaf-700 hover:underline"
+                >
+                  Esqueceu sua senha?
+                </Link>
+              </div>
             </form>
 
-            <div className="mt-4 text-center">
-              <Link
-                to="/recuperar-senha"
-                className="text-leaf-600 hover:text-leaf-700 text-sm hover:underline transition-colors"
-              >
-                Esqueceu sua senha?
-              </Link>
-            </div>
+            <Separator className="my-6" />
 
-            <div className="mt-6 text-center">
-              <p className="text-earth-600">
-                Não tem uma conta?{" "}
-                <Link
-                  to="/cadastro"
-                  className="text-leaf-600 hover:text-leaf-700 font-semibold hover:underline transition-colors"
-                >
-                  Cadastre-se
-                </Link>
+            <div className="text-center">
+              <p className="text-sm text-earth-600 mb-2">
+                Não tem uma conta?
               </p>
+              <Link to={`/cadastro${redirect ? `?redirect=${redirect}` : ''}`}>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-earth-200 text-earth-700 hover:bg-earth-50"
+                >
+                  Criar conta
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
-
-        <div className="mt-6 text-center">
-          <Link
-            to="/"
-            className="text-earth-600 hover:text-leaf-600 text-sm hover:underline transition-colors"
-          >
-            ← Voltar ao início
-          </Link>
-        </div>
       </div>
     </div>
   );

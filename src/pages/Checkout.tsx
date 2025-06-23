@@ -1,25 +1,34 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { AlertCircle } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Header from "@/components/Header";
-import ContactAddressForm from "@/components/checkout/ContactAddressForm";
-import ProductSelector from "@/components/checkout/ProductSelector";
-import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
-import WhatsAppOption from "@/components/checkout/WhatsAppOption";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
-import LoadingOverlay from "@/components/checkout/LoadingOverlay";
-import ProcessingStates from "@/components/checkout/ProcessingStates";
-import FormValidationIndicator from "@/components/checkout/FormValidationIndicator";
-import StepTransition from "@/components/checkout/StepTransition";
-import PaymentErrorHandler from "@/components/checkout/PaymentErrorHandler";
-import { useStripeCheckout } from "@/hooks/useStripeCheckout";
-import { useProcessOrder } from "@/hooks/useProcessOrder";
-import { useStockValidation, validateStockAvailability } from "@/hooks/useStockValidation";
+import ContactAddressForm from "@/components/checkout/ContactAddressForm";
+import PaymentMethodSelector from "@/components/checkout/PaymentMethodSelector";
+import OrderSummary from "@/components/checkout/OrderSummary";
+import WhatsAppOption from "@/components/checkout/WhatsAppOption";
+import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
+import { useCheckoutState } from "@/hooks/useCheckoutState";
 import { useToast } from "@/hooks/use-toast";
-import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
-import { validateCompleteAddress } from "@/components/checkout/utils/validation";
 
 const Checkout = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    // Se não está carregando e não há usuário autenticado
+    if (!loading && !user) {
+      toast({
+        title: "Acesso restrito",
+        description: "Você precisa estar logado para finalizar sua compra.",
+        variant: "destructive",
+      });
+      navigate("/login?redirect=/checkout");
+    }
+  }, [user, loading, navigate, toast]);
+
   const [quantity, setQuantity] = useState(1);
   const [currentStep, setCurrentStep] = useState(1);
   const [processingState, setProcessingState] = useState<'idle' | 'validating' | 'creating-order' | 'sending-email' | 'redirecting' | 'complete'>('idle');
@@ -251,6 +260,26 @@ const Checkout = () => {
         </div>
       </div>
     );
+  }
+
+  // Loading state enquanto verifica autenticação
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-leaf-600" />
+            <p className="text-earth-600">Verificando autenticação...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Se não há usuário após o loading, não renderiza nada (vai redirecionar)
+  if (!user) {
+    return null;
   }
 
   return (
