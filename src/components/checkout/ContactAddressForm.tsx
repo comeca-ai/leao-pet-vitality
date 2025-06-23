@@ -99,7 +99,7 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
               />
             </div>
             <FormValidationFeedback 
-              isValid={!validationErrors.name && customerInfo.name.length > 0}
+              isValid={validationErrors.name === '' && customerInfo.name.length > 0}
               message={validationErrors.name}
             />
           </div>
@@ -121,7 +121,7 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
               />
             </div>
             <FormValidationFeedback 
-              isValid={!validationErrors.email && customerInfo.email.length > 0}
+              isValid={validationErrors.email === '' && customerInfo.email.length > 0}
               message={validationErrors.email}
             />
           </div>
@@ -143,7 +143,7 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
               />
             </div>
             <FormValidationFeedback 
-              isValid={!validationErrors.phone && customerInfo.phone.length > 0}
+              isValid={validationErrors.phone === '' && customerInfo.phone.length > 0}
               message={validationErrors.phone}
             />
           </div>
@@ -164,7 +164,7 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
               />
             </div>
             <FormValidationFeedback 
-              isValid={customerInfo.address.zipCode.length === 0 || (customerInfo.address.zipCode.length === 9 && !validationErrors.zipCode)}
+              isValid={customerInfo.address.zipCode.length === 0 || (customerInfo.address.zipCode.length === 9 && validationErrors.zipCode === '')}
               message={validationErrors.zipCode}
             />
           </div>
