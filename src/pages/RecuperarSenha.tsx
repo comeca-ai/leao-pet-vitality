@@ -5,15 +5,48 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const RecuperarSenha = () => {
   const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { resetPassword } = useAuth();
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui seria implementada a lógica de recuperação de senha
-    console.log("E-mail para recuperação:", email);
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await resetPassword(email);
+      
+      if (error) {
+        toast({
+          title: "Erro",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setEmailSent(true);
+      toast({
+        title: "E-mail enviado!",
+        description: "Verifique sua caixa de entrada para redefinir sua senha",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -37,34 +70,65 @@ const RecuperarSenha = () => {
               Recuperar Senha
             </CardTitle>
             <CardDescription className="text-earth-600">
-              Digite seu e-mail para receber as instruções de recuperação
+              {emailSent 
+                ? "Verifique seu e-mail para continuar"
+                : "Digite seu e-mail para receber as instruções de recuperação"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-earth-700 font-medium">
-                  E-mail
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Digite seu e-mail"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
-                  required
-                />
+            {emailSent ? (
+              <div className="text-center space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-800 text-sm">
+                    Um e-mail com instruções foi enviado para <strong>{email}</strong>
+                  </p>
+                </div>
+                <p className="text-earth-600 text-sm">
+                  Não recebeu o e-mail? Verifique sua pasta de spam ou{" "}
+                  <button
+                    onClick={() => setEmailSent(false)}
+                    className="text-leaf-600 hover:text-leaf-700 font-semibold hover:underline"
+                  >
+                    tente novamente
+                  </button>
+                </p>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="text-earth-700 font-medium">
+                    E-mail
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="Digite seu e-mail"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105"
-              >
-                Enviar Instruções
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Enviando...
+                    </>
+                  ) : (
+                    "Enviar Instruções"
+                  )}
+                </Button>
+              </form>
+            )}
 
             <div className="mt-6 text-center">
               <p className="text-earth-600 text-sm mb-4">

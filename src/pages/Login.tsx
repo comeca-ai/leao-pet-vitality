@@ -1,18 +1,32 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     senha: ""
   });
+
+  const { signIn, user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -22,10 +36,40 @@ const Login = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui seria implementada a lógica de login
-    console.log("Dados do login:", formData);
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await signIn(formData.email, formData.senha);
+      
+      if (error) {
+        toast({
+          title: "Erro no login",
+          description: error.message === "Invalid login credentials" 
+            ? "E-mail ou senha incorretos" 
+            : error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Login realizado!",
+        description: "Bem-vindo de volta!",
+      });
+
+      // Redirecionar para a página inicial
+      navigate("/");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -67,6 +111,7 @@ const Login = () => {
                   onChange={handleInputChange}
                   className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -84,11 +129,13 @@ const Login = () => {
                     onChange={handleInputChange}
                     className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500 pr-10"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700 disabled:opacity-50"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -97,9 +144,17 @@ const Login = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                disabled={isLoading}
               >
-                Entrar
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  "Entrar"
+                )}
               </Button>
             </form>
 

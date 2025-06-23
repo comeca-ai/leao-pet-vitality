@@ -4,18 +4,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 const Cadastro = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
     senha: "",
     confirmacaoSenha: ""
   });
+
+  const { signUp } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,10 +32,57 @@ const Cadastro = () => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui seria implementada a lógica de cadastro
-    console.log("Dados do cadastro:", formData);
+    
+    if (formData.senha !== formData.confirmacaoSenha) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.senha.length < 6) {
+      toast({
+        title: "Erro",
+        description: "A senha deve ter pelo menos 6 caracteres",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await signUp(formData.email, formData.senha);
+      
+      if (error) {
+        toast({
+          title: "Erro no cadastro",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Cadastro realizado!",
+        description: "Verifique seu email para confirmar sua conta",
+      });
+
+      // Redirecionar para login
+      navigate("/login");
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro inesperado. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -70,6 +124,7 @@ const Cadastro = () => {
                   onChange={handleInputChange}
                   className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -86,6 +141,7 @@ const Cadastro = () => {
                   onChange={handleInputChange}
                   className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
                   required
+                  disabled={isLoading}
                 />
               </div>
 
@@ -103,11 +159,14 @@ const Cadastro = () => {
                     onChange={handleInputChange}
                     className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500 pr-10"
                     required
+                    disabled={isLoading}
+                    minLength={6}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700 disabled:opacity-50"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -128,11 +187,13 @@ const Cadastro = () => {
                     onChange={handleInputChange}
                     className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500 pr-10"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700 disabled:opacity-50"
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -141,9 +202,17 @@ const Cadastro = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                disabled={isLoading}
               >
-                Cadastrar
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Cadastrando...
+                  </>
+                ) : (
+                  "Cadastrar"
+                )}
               </Button>
             </form>
 
