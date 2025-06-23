@@ -1,40 +1,65 @@
+
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CheckCircle, Package, Truck, MessageCircle, Home, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CheckCircle, Package, Truck, MessageCircle, Home, Loader2, AlertCircle } from "lucide-react";
 import Header from "@/components/Header";
+import { useToast } from "@/hooks/use-toast";
 
 const Confirmacao = () => {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const [isLoading, setIsLoading] = useState(true);
   const [paymentStatus, setPaymentStatus] = useState<'loading' | 'success' | 'error'>('loading');
-
-  // Dados simulados do pedido - em produção, buscar do Stripe/Supabase
-  const pedido = {
-    numero: sessionId ? sessionId.slice(-8).toUpperCase() : "JL-2024-001",
-    produto: "Extrato de Juba de Leão 30ml",
-    quantidade: 1,
-    preco: 49.90,
-    frete: 0,
-    total: 49.90,
-    pagamento: "Cartão de Crédito",
-    status: "Confirmado"
-  };
+  const [orderDetails, setOrderDetails] = useState<any>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
-    // Simular verificação do pagamento
-    const timer = setTimeout(() => {
-      setPaymentStatus('success');
-      setIsLoading(false);
-    }, 2000);
+    const checkPaymentStatus = async () => {
+      if (!sessionId) {
+        setPaymentStatus('error');
+        setIsLoading(false);
+        return;
+      }
 
-    return () => clearTimeout(timer);
-  }, [sessionId]);
+      try {
+        // Simular verificação do pagamento
+        // Em produção, isso seria uma chamada real para verificar o status no Stripe
+        setTimeout(() => {
+          const mockOrderDetails = {
+            numero: sessionId.slice(-8).toUpperCase(),
+            produto: "Extrato de Juba de Leão 30ml",
+            quantidade: 1,
+            preco: 49.90,
+            frete: 0,
+            total: 49.90,
+            pagamento: "Cartão de Crédito",
+            status: "Confirmado",
+            dataCompra: new Date().toLocaleDateString('pt-BR'),
+            estimativaEntrega: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('pt-BR')
+          };
+
+          setOrderDetails(mockOrderDetails);
+          setPaymentStatus('success');
+          setIsLoading(false);
+
+          toast({
+            title: "Pagamento confirmado!",
+            description: "Seu pedido foi processado com sucesso.",
+          });
+        }, 2000);
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        setPaymentStatus('error');
+        setIsLoading(false);
+      }
+    };
+
+    checkPaymentStatus();
+  }, [sessionId, toast]);
 
   if (isLoading) {
     return (
@@ -63,6 +88,9 @@ const Confirmacao = () => {
         <Header />
         <div className="container mx-auto px-4 py-8">
           <div className="max-w-3xl mx-auto text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-4">
+              <AlertCircle className="w-12 h-12 text-red-600" />
+            </div>
             <h1 className="text-3xl font-bold text-red-600 mb-4">
               Erro no pagamento
             </h1>
@@ -79,6 +107,16 @@ const Confirmacao = () => {
       </div>
     );
   }
+
+  if (!orderDetails) {
+    return null;
+  }
+
+  const handleWhatsAppContact = () => {
+    const message = `Olá! Tenho dúvidas sobre meu pedido #${orderDetails.numero}`;
+    const whatsappUrl = `https://wa.me/5511999999999?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
@@ -98,7 +136,7 @@ const Confirmacao = () => {
               Obrigado pela sua compra!
             </p>
             <Badge className="bg-green-100 text-green-700 px-4 py-2 text-base">
-              Pedido #{pedido.numero}
+              Pedido #{orderDetails.numero}
             </Badge>
           </div>
 
@@ -129,15 +167,15 @@ const Confirmacao = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-earth-600">Produto:</span>
-                    <span className="text-earth-800 font-medium">{pedido.produto}</span>
+                    <span className="text-earth-800 font-medium">{orderDetails.produto}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-earth-600">Quantidade:</span>
-                    <span className="text-earth-800">{pedido.quantidade}</span>
+                    <span className="text-earth-800">{orderDetails.quantidade}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-earth-600">Preço unitário:</span>
-                    <span className="text-earth-800">R$ {pedido.preco.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-earth-800">R$ {orderDetails.preco.toFixed(2).replace('.', ',')}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-earth-600">Frete:</span>
@@ -147,14 +185,18 @@ const Confirmacao = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-earth-600">Forma de pagamento:</span>
-                    <span className="text-earth-800">{pedido.pagamento}</span>
+                    <span className="text-earth-800">{orderDetails.pagamento}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-earth-600">Data da compra:</span>
+                    <span className="text-earth-800">{orderDetails.dataCompra}</span>
                   </div>
                   
                   <Separator className="bg-earth-200" />
                   
                   <div className="flex justify-between text-lg font-bold">
                     <span className="text-earth-800">Total:</span>
-                    <span className="text-green-600">R$ {pedido.total.toFixed(2).replace('.', ',')}</span>
+                    <span className="text-green-600">R$ {orderDetails.total.toFixed(2).replace('.', ',')}</span>
                   </div>
                 </div>
               </div>
@@ -202,7 +244,7 @@ const Confirmacao = () => {
                   <div>
                     <h4 className="font-semibold text-earth-800">Envio e Entrega</h4>
                     <p className="text-earth-600 text-sm">
-                      Você receberá o código de rastreamento e seu produto chegará em 5-7 dias úteis.
+                      Você receberá o código de rastreamento e seu produto chegará em até {orderDetails.estimativaEntrega}.
                     </p>
                   </div>
                 </div>
@@ -215,7 +257,7 @@ const Confirmacao = () => {
                 </p>
                 <Button 
                   className="bg-green-600 hover:bg-green-700 text-white"
-                  onClick={() => window.open('https://wa.me/5511999999999?text=Olá! Tenho dúvidas sobre meu pedido #' + pedido.numero, '_blank')}
+                  onClick={handleWhatsAppContact}
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />
                   Falar no WhatsApp

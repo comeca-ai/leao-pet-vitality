@@ -37,7 +37,13 @@ const Checkout = () => {
   const productPrice = 49.90;
   const total = productPrice * quantity;
 
-  const isFormValid = Boolean(customerInfo.name && customerInfo.email && customerInfo.phone);
+  const isFormValid = Boolean(
+    customerInfo.name && 
+    customerInfo.email && 
+    customerInfo.phone &&
+    customerInfo.address.city &&
+    customerInfo.address.street
+  );
 
   const handleCustomerInfoChange = (info: typeof customerInfo) => {
     setCustomerInfo(info);
@@ -54,7 +60,7 @@ const Checkout = () => {
   };
 
   const handleCheckout = () => {
-    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
+    if (!isFormValid) {
       toast({
         title: "Dados obrigatórios",
         description: "Por favor, preencha todos os campos obrigatórios.",
@@ -77,10 +83,13 @@ const Checkout = () => {
           console.log('Redirecting to Stripe checkout:', data.url);
           setProcessingState('sending-email');
           
+          // Gerar número do pedido baseado no sessionId
+          const orderNumber = data.sessionId.slice(-8).toUpperCase();
+          
           sendOrderEmail({
             customerName: customerInfo.name,
             customerEmail: customerInfo.email,
-            orderNumber: data.sessionId.slice(-8).toUpperCase(),
+            orderNumber: orderNumber,
             orderTotal: total,
             orderItems: [{
               name: "Extrato de Juba de Leão 30ml",

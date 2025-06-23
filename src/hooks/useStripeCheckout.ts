@@ -26,8 +26,50 @@ export const useStripeCheckout = () => {
     mutationFn: async (checkoutData: CheckoutData): Promise<CheckoutResponse> => {
       console.log('Creating Stripe checkout:', checkoutData)
 
+      // Primeiro criar o pedido no banco de dados
+      const orderData = {
+        valor_total: 49.90 * checkoutData.quantity,
+        status: 'iniciado',
+        forma_pagamento: 'cartao'
+      }
+
+      const addressData = {
+        telefone: checkoutData.customerInfo.phone,
+        cep: checkoutData.customerInfo.address.zipCode,
+        rua: checkoutData.customerInfo.address.street,
+        numero: '0',
+        bairro: 'Centro',
+        cidade: checkoutData.customerInfo.address.city,
+        estado: 'SP'
+      }
+
+      // Criar o pedido primeiro
+      const { data: orderResponse, error: orderError } = await supabase.functions.invoke('process-order', {
+        body: {
+          orderData: {
+            ...orderData,
+            items: [{
+              product_id: '123e4567-e89b-12d3-a456-426614174000', // ID fictício do produto
+              quantidade: checkoutData.quantity,
+              preco_unitario: 49.90
+            }]
+          },
+          address: addressData
+        }
+      })
+
+      if (orderError) {
+        console.error('Error creating order:', orderError)
+        throw orderError
+      }
+
+      // Agora criar a sessão do Stripe
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: checkoutData,
+        body: {
+          orderId: orderResponse.order.id,
+          successUrl: `${window.location.origin}/confirmacao?session_id={CHECKOUT_SESSION_ID}`,
+          cancelUrl: `${window.location.origin}/checkout`
+        }
       })
 
       if (error) {
