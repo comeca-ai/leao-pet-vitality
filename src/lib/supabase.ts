@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = 'https://wezlahokdkfhaveylnxo.supabase.co'
@@ -54,4 +53,64 @@ export interface FAQ {
   ativo: boolean
   created_at: string
   updated_at: string
+}
+
+// Novos tipos para as tabelas com relacionamentos
+export interface Address {
+  id: string
+  user_id: string
+  telefone: string
+  cep: string
+  rua: string
+  numero: string
+  complemento?: string
+  bairro: string
+  cidade: string
+  estado: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Order {
+  id: string
+  user_id: string
+  address_id?: string
+  valor_total: number
+  status: 'iniciado' | 'aguardando_pagamento' | 'pago' | 'cancelado' | 'whatsapp'
+  forma_pagamento?: 'pix' | 'cartao' | 'boleto' | 'whatsapp'
+  stripe_payment_intent_id?: string
+  criado_em: string
+  atualizado_em: string
+}
+
+export interface OrderItem {
+  id: string
+  order_id: string
+  product_id: string
+  quantidade: number
+  preco_unitario: number
+  subtotal: number
+  created_at: string
+}
+
+export interface Subscription {
+  id: string
+  user_id: string
+  stripe_subscription_id?: string
+  product_id?: string
+  status: 'ativa' | 'cancelada' | 'trial' | 'incompleta'
+  data_inicio: string
+  data_fim?: string
+  created_at: string
+  updated_at: string
+}
+
+// Tipos para queries com relacionamentos
+export interface OrderWithItems extends Order {
+  order_items: (OrderItem & { product: Product })[]
+  address?: Address
+}
+
+export interface OrderItemWithProduct extends OrderItem {
+  product: Product
 }
