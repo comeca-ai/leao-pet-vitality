@@ -13,12 +13,27 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')!
+    // Verificar todas as variáveis de ambiente necessárias
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY')
     
-    if (!supabaseUrl || !supabaseKey || !stripeSecretKey) {
-      throw new Error('Missing required environment variables')
+    console.log('Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseKey: !!supabaseKey,
+      hasStripeKey: !!stripeSecretKey
+    })
+    
+    if (!supabaseUrl) {
+      throw new Error('SUPABASE_URL environment variable is missing')
+    }
+    
+    if (!supabaseKey) {
+      throw new Error('SUPABASE_SERVICE_ROLE_KEY environment variable is missing')
+    }
+    
+    if (!stripeSecretKey) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is missing')
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey)
@@ -32,11 +47,13 @@ serve(async (req) => {
     const token = authHeader.replace('Bearer ', '')
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     if (authError || !user) {
+      console.error('Authentication error:', authError)
       throw new Error('Invalid authentication')
     }
 
-    const { orderId, successUrl, cancelUrl } = await req.json()
+    console.log('User authenticated:', user.id)
 
+    const { orderId, successUrl, cancelUrl } = await req.json()
     console.log('Creating checkout for order:', orderId)
 
     // Buscar o pedido com itens
@@ -55,8 +72,10 @@ serve(async (req) => {
 
     if (orderError || !order) {
       console.error('Order not found:', orderError)
-      throw new Error('Order not found')
+      throw new Error('Order not found or access denied')
     }
+
+    console.log('Order found:', order.id, 'with', order.order_items?.length || 0, 'items')
 
     // Import Stripe
     const Stripe = (await import('https://esm.sh/stripe@12.18.0')).default
@@ -65,19 +84,35 @@ serve(async (req) => {
       httpClient: Stripe.createFetchHttpClient(),
     })
 
+    // Verificar se há itens no pedido
+    if (!order.order_items || order.order_items.length === 0) {
+      throw new Error('Order has no items')
+    }
+
     // Criar line items para o Stripe
-    const lineItems = order.order_items.map((item: any) => ({
-      price_data: {
-        currency: 'brl',
-        product_data: {
-          name: item.product.nome,
-          description: item.product.descricao || undefined,
-          images: item.product.imagem_url ? [item.product.imagem_url] : undefined,
+    const lineItems = order.order_items.map((item: any) => {
+      const product = item.product
+      if (!product) {
+        throw new Error(`Product not found for item ${item.id}`)
+      }
+
+      console.log('Creating line item for product:', product.nome, 'price:', item.preco_unitario)
+
+      return {
+        price_data: {
+          currency: 'brl',
+          product_data: {
+            name: product.nome,
+            description: product.descricao || undefined,
+            images: product.imagem_url ? [product.imagem_url] : undefined,
+          },
+          unit_amount: Math.round(item.preco_unitario * 100), // Converter para centavos
         },
-        unit_amount: Math.round(item.preco_unitario * 100), // Converter para centavos
-      },
-      quantity: item.quantidade,
-    }))
+        quantity: item.quantidade,
+      }
+    })
+
+    console.log('Creating Stripe session with', lineItems.length, 'items')
 
     // Criar sessão do Stripe Checkout
     const session = await stripe.checkout.sessions.create({
@@ -101,7 +136,7 @@ serve(async (req) => {
       }
     })
 
-    console.log('Stripe session created:', session.id)
+    console.log('Stripe session created successfully:', session.id)
 
     // Atualizar o pedido com o status e payment_intent_id se disponível
     const updateData: any = {
@@ -138,10 +173,16 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Create checkout error:', error)
+    
+    // Retornar erro mais detalhado
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+    const errorDetails = {
+      error: errorMessage,
+      timestamp: new Date().toISOString()
+    }
+    
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error' 
-      }),
+      JSON.stringify(errorDetails),
       { 
         status: 500,
         headers: { 
