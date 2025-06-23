@@ -38,8 +38,8 @@ export const useNotifications = () => {
       variant: toastVariant,
       duration,
       action: action ? {
-        altText: action.label,
         onClick: action.onClick,
+        children: action.label,
       } : undefined,
     });
   }, [toast]);

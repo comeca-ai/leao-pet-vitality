@@ -93,7 +93,9 @@ ToastClose.displayName = ToastPrimitives.Close.displayName
 
 const ToastTitle = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Title>,
-  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title>
+  React.ComponentPropsWithoutRef<typeof ToastPrimitives.Title> & {
+    variant?: 'default' | 'destructive' | 'success' | 'warning'
+  }
 >(({ className, variant, ...props }, ref) => {
   const getIcon = () => {
     switch (variant) {
