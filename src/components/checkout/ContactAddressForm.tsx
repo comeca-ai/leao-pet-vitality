@@ -60,8 +60,8 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
             onChange={(value) => handleInputChange('name', value)}
             required
             icon={User}
-            validationError={validationErrors.name}
-            isValid={validationErrors.name === '' && customerInfo.name.length > 0}
+            validationError={validationErrors.name || ''}
+            isValid={!validationErrors.name && customerInfo.name.length > 0}
           />
 
           <ContactFormField
@@ -73,8 +73,8 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
             onChange={(value) => handleInputChange('email', value)}
             required
             icon={Mail}
-            validationError={validationErrors.email}
-            isValid={validationErrors.email === '' && customerInfo.email.length > 0}
+            validationError={validationErrors.email || ''}
+            isValid={!validationErrors.email && customerInfo.email.length > 0}
           />
 
           <ContactFormField
@@ -86,8 +86,8 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
             onChange={(value) => handleInputChange('phone', value)}
             required
             icon={Phone}
-            validationError={validationErrors.phone}
-            isValid={validationErrors.phone === '' && customerInfo.phone.length > 0}
+            validationError={validationErrors.phone || ''}
+            isValid={!validationErrors.phone && customerInfo.phone.length > 0}
           />
 
           <ContactFormField
@@ -98,8 +98,8 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
             value={customerInfo.address.zipCode}
             onChange={(value) => handleInputChange('zipCode', value)}
             icon={Hash}
-            validationError={validationErrors.zipCode}
-            isValid={customerInfo.address.zipCode.length === 0 || (customerInfo.address.zipCode.length === 9 && validationErrors.zipCode === '')}
+            validationError={validationErrors.zipCode || ''}
+            isValid={customerInfo.address.zipCode.length === 0 || (!validationErrors.zipCode && customerInfo.address.zipCode.length === 9)}
           />
 
           <ContactFormField
