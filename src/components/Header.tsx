@@ -43,13 +43,10 @@ const Header = () => {
                 Entrar
               </Link>
               <Link to="/cadastro">
-                <Button className="bg-earth-600 hover:bg-earth-700 text-white px-4 py-2 rounded-full">
-                  Cadastrar
+                <Button className="bg-leaf-600 hover:bg-leaf-700 text-white px-6 py-2 rounded-full">
+                  Comprar Agora
                 </Button>
               </Link>
-              <Button className="bg-leaf-600 hover:bg-leaf-700 text-white px-6 py-2 rounded-full">
-                Comprar Agora
-              </Button>
             </div>
           </nav>
 
@@ -86,13 +83,10 @@ const Header = () => {
                   Entrar
                 </Link>
                 <Link to="/cadastro">
-                  <Button className="bg-earth-600 hover:bg-earth-700 text-white w-full rounded-full">
-                    Cadastrar
+                  <Button className="bg-leaf-600 hover:bg-leaf-700 text-white w-full rounded-full">
+                    Comprar Agora
                   </Button>
                 </Link>
-                <Button className="bg-leaf-600 hover:bg-leaf-700 text-white w-full rounded-full">
-                  Comprar Agora
-                </Button>
               </div>
             </nav>
           </div>

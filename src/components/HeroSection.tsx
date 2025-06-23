@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Shield, Star, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const HeroSection = () => {
   return (
@@ -47,13 +48,15 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
-                className="bg-leaf-600 hover:bg-leaf-700 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
-              >
-                <Truck className="w-5 h-5 mr-2" />
-                Comprar Agora – Frete Grátis
-              </Button>
+              <Link to="/cadastro">
+                <Button 
+                  size="lg" 
+                  className="bg-leaf-600 hover:bg-leaf-700 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Truck className="w-5 h-5 mr-2" />
+                  Comprar Agora – Frete Grátis
+                </Button>
+              </Link>
               
               <Button 
                 variant="outline" 
