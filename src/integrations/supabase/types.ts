@@ -9,7 +9,153 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      faqs: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          id: string
+          ordem: number | null
+          pergunta: string
+          resposta: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem?: number | null
+          pergunta: string
+          resposta: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          id?: string
+          ordem?: number | null
+          pergunta?: string
+          resposta?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          estoque: number | null
+          id: string
+          imagem_url: string | null
+          nome: string
+          preco: number
+          preco_promocional: number | null
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          estoque?: number | null
+          id?: string
+          imagem_url?: string | null
+          nome: string
+          preco: number
+          preco_promocional?: number | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          estoque?: number | null
+          id?: string
+          imagem_url?: string | null
+          nome?: string
+          preco?: number
+          preco_promocional?: number | null
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          data_cadastro: string | null
+          email: string
+          id: string
+          is_admin: boolean | null
+          nome: string
+          stripe_customer_id: string | null
+          telefone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data_cadastro?: string | null
+          email: string
+          id: string
+          is_admin?: boolean | null
+          nome: string
+          stripe_customer_id?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_cadastro?: string | null
+          email?: string
+          id?: string
+          is_admin?: boolean | null
+          nome?: string
+          stripe_customer_id?: string | null
+          telefone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          aprovado: boolean | null
+          created_at: string | null
+          data: string | null
+          destaque: boolean | null
+          foto_url: string | null
+          id: string
+          nome: string
+          texto: string
+          updated_at: string | null
+        }
+        Insert: {
+          aprovado?: boolean | null
+          created_at?: string | null
+          data?: string | null
+          destaque?: boolean | null
+          foto_url?: string | null
+          id?: string
+          nome: string
+          texto: string
+          updated_at?: string | null
+        }
+        Update: {
+          aprovado?: boolean | null
+          created_at?: string | null
+          data?: string | null
+          destaque?: boolean | null
+          foto_url?: string | null
+          id?: string
+          nome?: string
+          texto?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
