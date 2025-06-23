@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -6,6 +7,9 @@ import ProductSelector from "@/components/checkout/ProductSelector";
 import StripeOrderSummary from "@/components/checkout/StripeOrderSummary";
 import CheckoutProgress from "@/components/checkout/CheckoutProgress";
 import LoadingOverlay from "@/components/checkout/LoadingOverlay";
+import ProcessingStates from "@/components/checkout/ProcessingStates";
+import FormValidationIndicator from "@/components/checkout/FormValidationIndicator";
+import StepTransition from "@/components/checkout/StepTransition";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useToast } from "@/hooks/use-toast";
 import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
@@ -13,7 +17,7 @@ import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
 const Checkout = () => {
   const [quantity, setQuantity] = useState(1);
   const [currentStep, setCurrentStep] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingState, setProcessingState] = useState<'idle' | 'validating' | 'creating-order' | 'sending-email' | 'redirecting' | 'complete'>('idle');
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
     email: "",
@@ -33,12 +37,10 @@ const Checkout = () => {
   const productPrice = 49.90;
   const total = productPrice * quantity;
 
-  // Fix: Ensure isFormValid returns a boolean
   const isFormValid = Boolean(customerInfo.name && customerInfo.email && customerInfo.phone);
 
   const handleCustomerInfoChange = (info: typeof customerInfo) => {
     setCustomerInfo(info);
-    // Avançar para próximo step quando informações estiverem completas
     if (info.name && info.email && info.phone && currentStep === 1) {
       setCurrentStep(2);
     }
@@ -46,14 +48,12 @@ const Checkout = () => {
 
   const handleQuantityChange = (qty: number) => {
     setQuantity(qty);
-    // Avançar para próximo step quando quantidade estiver selecionada
     if (qty > 0 && currentStep === 2) {
       setCurrentStep(3);
     }
   };
 
   const handleCheckout = () => {
-    // Validate required fields
     if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
       toast({
         title: "Dados obrigatórios",
@@ -64,59 +64,64 @@ const Checkout = () => {
       return;
     }
 
-    setIsProcessing(true);
+    setProcessingState('validating');
 
-    createCheckout({
-      quantity,
-      customerInfo,
-    }, {
-      onSuccess: (data) => {
-        console.log('Redirecting to Stripe checkout:', data.url);
-        
-        // Send confirmation email before redirecting to payment
-        sendOrderEmail({
-          customerName: customerInfo.name,
-          customerEmail: customerInfo.email,
-          orderNumber: data.sessionId.slice(-8).toUpperCase(),
-          orderTotal: total,
-          orderItems: [{
-            name: "Extrato de Juba de Leão 30ml",
-            quantity: quantity,
-            price: productPrice,
-          }],
-          emailType: 'confirmation',
-        }, {
-          onSuccess: () => {
-            console.log('Confirmation email sent successfully');
-          },
-          onError: (error) => {
-            console.error('Failed to send confirmation email:', error);
-            // Don't stop the checkout process if email fails
-          }
-        });
-        
-        // Show success message before redirect
-        toast({
-          title: "Pedido criado com sucesso!",
-          description: "Redirecionando para o pagamento...",
-        });
-        
-        // Redirect to Stripe checkout after a brief delay
-        setTimeout(() => {
-          window.location.href = data.url;
-        }, 1500);
-      },
-      onError: (error) => {
-        console.error('Checkout error:', error);
-        setIsProcessing(false);
-        toast({
-          title: "Erro no checkout",
-          description: "Houve um erro ao processar seu pedido. Tente novamente.",
-          variant: "destructive",
-        });
-      },
-    });
+    setTimeout(() => {
+      setProcessingState('creating-order');
+      
+      createCheckout({
+        quantity,
+        customerInfo,
+      }, {
+        onSuccess: (data) => {
+          console.log('Redirecting to Stripe checkout:', data.url);
+          setProcessingState('sending-email');
+          
+          sendOrderEmail({
+            customerName: customerInfo.name,
+            customerEmail: customerInfo.email,
+            orderNumber: data.sessionId.slice(-8).toUpperCase(),
+            orderTotal: total,
+            orderItems: [{
+              name: "Extrato de Juba de Leão 30ml",
+              quantity: quantity,
+              price: productPrice,
+            }],
+            emailType: 'confirmation',
+          }, {
+            onSuccess: () => {
+              console.log('Confirmation email sent successfully');
+              setProcessingState('redirecting');
+            },
+            onError: (error) => {
+              console.error('Failed to send confirmation email:', error);
+              setProcessingState('redirecting');
+            }
+          });
+          
+          toast({
+            title: "Pedido criado com sucesso!",
+            description: "Redirecionando para o pagamento...",
+          });
+          
+          setTimeout(() => {
+            window.location.href = data.url;
+          }, 2000);
+        },
+        onError: (error) => {
+          console.error('Checkout error:', error);
+          setProcessingState('idle');
+          toast({
+            title: "Erro no checkout",
+            description: "Houve um erro ao processar seu pedido. Tente novamente.",
+            variant: "destructive",
+          });
+        },
+      });
+    }, 500);
   };
+
+  const isProcessing = processingState !== 'idle';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
@@ -124,7 +129,7 @@ const Checkout = () => {
       
       <LoadingOverlay 
         isVisible={isProcessing} 
-        message="Criando seu pedido..." 
+        message="Processando seu pedido..." 
       />
       
       <div className="container mx-auto px-4 py-8">
@@ -134,26 +139,35 @@ const Checkout = () => {
           </h1>
 
           <CheckoutProgress currentStep={currentStep} />
+          <ProcessingStates currentState={processingState} />
 
           <div className="grid lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-8">
-              <div className={`transition-all duration-300 ${currentStep >= 1 ? 'opacity-100' : 'opacity-50'}`}>
+              <StepTransition isActive={currentStep >= 1} isCompleted={currentStep > 1}>
                 <ContactAddressForm 
                   customerInfo={customerInfo}
                   onCustomerInfoChange={handleCustomerInfoChange}
                 />
-              </div>
+                {currentStep >= 1 && (
+                  <div className="mt-4">
+                    <FormValidationIndicator
+                      isValid={isFormValid}
+                      message={isFormValid ? "Dados validados com sucesso" : "Complete os campos obrigatórios"}
+                    />
+                  </div>
+                )}
+              </StepTransition>
               
-              <div className={`transition-all duration-300 ${currentStep >= 2 ? 'opacity-100' : 'opacity-50'}`}>
+              <StepTransition isActive={currentStep >= 2} isCompleted={currentStep > 2}>
                 <ProductSelector 
                   quantity={quantity} 
                   onQuantityChange={handleQuantityChange} 
                   productPrice={productPrice}
                 />
-              </div>
+              </StepTransition>
             </div>
 
-            <div className={`transition-all duration-300 ${currentStep >= 3 ? 'opacity-100' : 'opacity-50'}`}>
+            <StepTransition isActive={currentStep >= 3} isCompleted={false}>
               <StripeOrderSummary
                 quantity={quantity}
                 productPrice={productPrice}
@@ -162,7 +176,7 @@ const Checkout = () => {
                 isLoading={isPending || isProcessing}
                 isFormValid={isFormValid}
               />
-            </div>
+            </StepTransition>
           </div>
         </div>
       </div>
