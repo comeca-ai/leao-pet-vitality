@@ -103,6 +103,15 @@ const Login = () => {
               </Button>
             </form>
 
+            <div className="mt-4 text-center">
+              <Link
+                to="#"
+                className="text-leaf-600 hover:text-leaf-700 text-sm hover:underline transition-colors"
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
+
             <div className="mt-6 text-center">
               <p className="text-earth-600">
                 Não tem uma conta?{" "}
