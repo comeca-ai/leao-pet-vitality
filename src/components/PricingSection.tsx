@@ -2,203 +2,185 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Check, Crown, Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Check, Shield, Star, Truck } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useProducts } from "@/hooks/useProducts";
 
 const PricingSection = () => {
-  const navigate = useNavigate();
+  const { data: products, isLoading, error } = useProducts();
 
-  const plans = [
-    {
-      name: "1 Unidade",
-      subtitle: "Para experimentar",
-      price: "49,90",
-      originalPrice: "59,90",
-      bottles: 1,
-      duration: "30 dias",
-      savings: null,
-      popular: false,
-      features: [
-        "1 frasco de 30ml",
-        "Duração de 30 dias",
-        "Frete grátis",
-        "Garantia de 30 dias",
-        "Suporte por WhatsApp"
-      ]
-    },
-    {
-      name: "3 Unidades",
-      subtitle: "Mais vendido",
-      price: "134,70",
-      originalPrice: "179,70",
-      bottles: 3,
-      duration: "90 dias",
-      savings: "Economize R$ 45,00",
-      popular: true,
-      features: [
-        "3 frascos de 30ml",
-        "Duração de 90 dias",
-        "Frete grátis",
-        "Garantia de 30 dias",
-        "Suporte por WhatsApp",
-        "Desconto progressivo"
-      ]
-    },
-    {
-      name: "5 Unidades",
-      subtitle: "Melhor custo-benefício",
-      price: "199,60",
-      originalPrice: "299,50",
-      bottles: 5,
-      duration: "150 dias",
-      savings: "Economize R$ 99,90",
-      popular: false,
-      features: [
-        "5 frascos de 30ml",
-        "Duração de 150 dias",
-        "Frete grátis",
-        "Garantia de 30 dias",
-        "Suporte por WhatsApp",
-        "Maior desconto",
-        "Brinde especial"
-      ]
-    }
-  ];
+  if (isLoading) {
+    return (
+      <section id="precos" className="py-16 md:py-24 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Carregando produtos...</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
-  const handleBuyNow = (quantity: number) => {
-    // Store quantity in localStorage and navigate to checkout
-    localStorage.setItem('checkoutQuantity', quantity.toString());
-    navigate('/checkout');
+  if (error) {
+    console.error('Error loading products:', error);
+    return (
+      <section id="precos" className="py-16 md:py-24 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="text-center">
+            <p className="text-earth-600">Erro ao carregar produtos.</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Fallback product caso não haja dados no banco
+  const fallbackProduct = {
+    id: '1',
+    nome: "Extrato de Juba de Leão para Pets",
+    descricao: "Suplemento natural que fortalece o sistema imunológico do seu pet, promovendo mais energia, vitalidade e bem-estar geral.",
+    preco: 89.90,
+    preco_promocional: 49.90,
+    imagem_url: null,
+    estoque: 100,
+    ativo: true,
+    stripe_product_id: null,
+    stripe_price_id: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   };
+
+  const mainProduct = products && products.length > 0 ? products[0] : fallbackProduct;
+  const originalPrice = mainProduct.preco;
+  const salePrice = mainProduct.preco_promocional || mainProduct.preco;
+  const discount = mainProduct.preco_promocional 
+    ? Math.round(((originalPrice - mainProduct.preco_promocional) / originalPrice) * 100)
+    : 0;
+
+  const benefits = [
+    "Aprovado pelo MAPA",
+    "30 dias de garantia",
+    "Frete grátis para todo Brasil",
+    "Reforça a imunidade",
+    "Melhora a cognição",
+    "100% natural e seguro",
+    "Suporte via WhatsApp",
+    "Resultados em 2-4 semanas"
+  ];
 
   return (
     <section id="precos" className="py-16 md:py-24 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center space-y-4 mb-16">
           <Badge className="bg-leaf-100 text-leaf-700 border-leaf-300 px-4 py-2">
-            Oferta Especial
+            <Shield className="w-4 h-4 mr-2" />
+            Aprovado pelo MAPA
           </Badge>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-earth-800">
-            Escolha a melhor{" "}
-            <span className="text-leaf-600">quantidade</span> para seu pet
+            Invista na saúde do seu{" "}
+            <span className="text-leaf-600">pet</span>
           </h2>
           <p className="text-xl text-earth-600 max-w-3xl mx-auto">
-            Quanto mais você cuida da saúde do seu pet, mais você economiza. 
-            Todos os planos incluem frete grátis e garantia de satisfação.
+            Único extrato de Juba de Leão para pets com aprovação oficial do MAPA. 
+            Mais saúde, bem-estar e vitalidade para seu companheiro.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {plans.map((plan, index) => (
-            <Card 
-              key={index}
-              className={`relative p-8 border-2 transition-all duration-300 hover:shadow-xl ${
-                plan.popular 
-                  ? 'border-leaf-400 bg-gradient-to-br from-leaf-50 to-cream-50' 
-                  : 'border-earth-200 hover:border-leaf-300'
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-leaf-600 text-white px-4 py-2 shadow-lg">
-                    <Crown className="w-4 h-4 mr-1" />
-                    Mais Vendido
-                  </Badge>
-                </div>
-              )}
+        <div className="max-w-md mx-auto">
+          <Card className="p-8 border-2 border-leaf-300 relative overflow-hidden bg-gradient-to-br from-white to-cream-50">
+            {/* Discount badge */}
+            {discount > 0 && (
+              <div className="absolute -top-4 -right-4 bg-red-500 text-white px-6 py-2 rounded-full transform rotate-12 font-bold text-sm">
+                -{discount}%
+              </div>
+            )}
 
-              <div className="space-y-6">
-                {/* Header */}
-                <div className="text-center space-y-2">
-                  <h3 className="text-2xl font-bold text-earth-800">{plan.name}</h3>
-                  <p className="text-earth-600">{plan.subtitle}</p>
-                </div>
+            <div className="text-center space-y-6">
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-earth-800">{mainProduct.nome}</h3>
+                <p className="text-earth-600">{mainProduct.descricao}</p>
+              </div>
 
-                {/* Price */}
-                <div className="text-center space-y-2">
-                  <div className="flex items-center justify-center space-x-2">
-                    <span className="text-4xl font-bold text-earth-800">R$ {plan.price}</span>
-                    <div className="text-right">
-                      <div className="text-sm text-earth-500 line-through">R$ {plan.originalPrice}</div>
-                      {plan.savings && (
-                        <div className="text-xs text-leaf-600 font-medium">{plan.savings}</div>
-                      )}
-                    </div>
+              {/* Pricing */}
+              <div className="space-y-2">
+                {discount > 0 && (
+                  <div className="text-earth-500 text-lg line-through">
+                    De R$ {originalPrice.toFixed(2).replace('.', ',')}
                   </div>
-                  <p className="text-earth-600">Pagamento via Stripe</p>
-                  <div className="bg-earth-100 rounded-lg p-2">
-                    <p className="text-sm text-earth-700">
-                      {plan.bottles} frasco{plan.bottles > 1 ? 's' : ''} • {plan.duration}
-                    </p>
-                  </div>
+                )}
+                <div className="text-4xl font-bold text-leaf-600">
+                  R$ {salePrice.toFixed(2).replace('.', ',')}
                 </div>
-
-                {/* Features */}
-                <div className="space-y-3">
-                  {plan.features.map((feature, featureIndex) => (
-                    <div key={featureIndex} className="flex items-center space-x-3">
-                      <Check className="w-5 h-5 text-leaf-600 flex-shrink-0" />
-                      <span className="text-earth-700">{feature}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CTA Button */}
-                <Button 
-                  className={`w-full py-3 text-lg rounded-full transition-all duration-300 ${
-                    plan.popular
-                      ? 'bg-leaf-600 hover:bg-leaf-700 text-white shadow-lg hover:shadow-xl'
-                      : 'bg-earth-600 hover:bg-earth-700 text-white'
-                  }`}
-                  onClick={() => handleBuyNow(plan.bottles)}
-                >
-                  Comprar Agora
-                </Button>
-
-                {/* Additional info */}
-                <div className="text-center text-sm text-earth-500">
-                  <p>✓ Frete grátis para todo Brasil</p>
-                  <p>✓ Entrega em 3-7 dias úteis</p>
+                <div className="text-earth-600">
+                  ou 3x de R$ {(salePrice / 3).toFixed(2).replace('.', ',')} sem juros
                 </div>
               </div>
-            </Card>
-          ))}
+
+              {/* Benefits */}
+              <div className="space-y-3">
+                {benefits.map((benefit, index) => (
+                  <div key={index} className="flex items-center space-x-3 text-left">
+                    <Check className="w-5 h-5 text-leaf-600 flex-shrink-0" />
+                    <span className="text-earth-700">{benefit}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Button */}
+              <div className="space-y-4">
+                <Link to="/cadastro">
+                  <Button 
+                    size="lg" 
+                    className="w-full bg-leaf-600 hover:bg-leaf-700 text-white py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Truck className="w-5 h-5 mr-2" />
+                    Comprar Agora – Frete Grátis
+                  </Button>
+                </Link>
+                
+                <div className="flex items-center justify-center space-x-1 text-yellow-500">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 fill-current" />
+                  ))}
+                  <span className="ml-2 text-earth-600 text-sm">4.9/5 (127 avaliações)</span>
+                </div>
+              </div>
+
+              {/* Trust indicators */}
+              <div className="bg-cream-50 rounded-xl p-4 space-y-2">
+                <div className="text-earth-800 font-semibold">🔒 Compra 100% Segura</div>
+                <div className="text-earth-600 text-sm">
+                  Pagamento protegido por SSL e garantia de 30 dias
+                </div>
+              </div>
+            </div>
+          </Card>
         </div>
 
-        {/* Payment methods and guarantees */}
-        <div className="mt-16 bg-gradient-to-r from-cream-50 to-earth-50 rounded-2xl p-8">
-          <div className="grid md:grid-cols-2 gap-8 items-center">
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-earth-800">
-                Formas de Pagamento
-              </h3>
-              <div className="grid grid-cols-1 gap-4">
-                <div className="bg-white rounded-lg p-4 text-center shadow-sm">
-                  <p className="font-medium text-earth-800">Stripe Checkout</p>
-                  <p className="text-sm text-earth-600">Cartão, PIX e boleto</p>
-                </div>
-              </div>
+        {/* Additional trust section */}
+        <div className="mt-16 grid md:grid-cols-3 gap-8 text-center">
+          <div className="space-y-2">
+            <div className="w-16 h-16 bg-leaf-100 rounded-full flex items-center justify-center mx-auto">
+              <Shield className="w-8 h-8 text-leaf-600" />
             </div>
-            
-            <div className="space-y-4">
-              <h3 className="text-2xl font-bold text-earth-800">
-                Suas Garantias
-              </h3>
-              <div className="space-y-2">
-                <div className="flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="text-earth-700">30 dias de garantia total</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="text-earth-700">Frete grátis em todo Brasil</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500" />
-                  <span className="text-earth-700">Pagamento 100% seguro</span>
-                </div>
-              </div>
+            <h4 className="font-semibold text-earth-800">Aprovado pelo MAPA</h4>
+            <p className="text-earth-600 text-sm">Único produto com aprovação oficial</p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="w-16 h-16 bg-leaf-100 rounded-full flex items-center justify-center mx-auto">
+              <Truck className="w-8 h-8 text-leaf-600" />
             </div>
+            <h4 className="font-semibold text-earth-800">Frete Grátis</h4>
+            <p className="text-earth-600 text-sm">Entrega gratuita para todo o Brasil</p>
+          </div>
+          
+          <div className="space-y-2">
+            <div className="w-16 h-16 bg-leaf-100 rounded-full flex items-center justify-center mx-auto">
+              <Star className="w-8 h-8 text-leaf-600" />
+            </div>
+            <h4 className="font-semibold text-earth-800">30 Dias de Garantia</h4>
+            <p className="text-earth-600 text-sm">Satisfação garantida ou seu dinheiro de volta</p>
           </div>
         </div>
       </div>
