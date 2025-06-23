@@ -164,7 +164,7 @@ const ContactAddressForm = ({ customerInfo, onCustomerInfoChange }: ContactAddre
               />
             </div>
             <FormValidationFeedback 
-              isValid={!validationErrors.zipCode}
+              isValid={!validationErrors.zipCode && customerInfo.address.zipCode.length === 0}
               message={validationErrors.zipCode}
             />
           </div>
