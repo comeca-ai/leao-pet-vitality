@@ -81,38 +81,56 @@ serve(async (req) => {
       }
     }
 
-    // Criar/atualizar endereço
+    // Verificar se existe um endereço similar (mesmo CEP, rua, numero e cidade)
     const { data: existingAddress, error: addressSelectError } = await supabase
       .from('addresses')
       .select('*')
       .eq('user_id', user.id)
       .eq('cep', address.cep)
       .eq('rua', address.rua)
+      .eq('numero', address.numero)
+      .eq('cidade', address.cidade)
       .maybeSingle()
+
+    if (addressSelectError) {
+      logStep("Error checking existing address", addressSelectError);
+      throw addressSelectError
+    }
 
     let addressId;
     
     if (existingAddress) {
-      // Atualizar endereço existente
-      const { data: updatedAddress, error: addressUpdateError } = await supabase
-        .from('addresses')
-        .update({
-          ...address,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existingAddress.id)
-        .select()
-        .single()
+      // Atualizar endereço existente apenas se houver mudanças significativas
+      const hasChanges = 
+        existingAddress.bairro !== address.bairro ||
+        existingAddress.estado !== address.estado ||
+        existingAddress.complemento !== address.complemento ||
+        existingAddress.telefone !== address.telefone;
 
-      if (addressUpdateError) {
-        logStep("Error updating address", addressUpdateError);
-        throw addressUpdateError
+      if (hasChanges) {
+        const { data: updatedAddress, error: addressUpdateError } = await supabase
+          .from('addresses')
+          .update({
+            ...address,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingAddress.id)
+          .select()
+          .single()
+
+        if (addressUpdateError) {
+          logStep("Error updating address", addressUpdateError);
+          throw addressUpdateError
+        }
+        
+        logStep("Address updated", { addressId: existingAddress.id });
+      } else {
+        logStep("Using existing address without changes", { addressId: existingAddress.id });
       }
       
-      addressId = updatedAddress.id
-      logStep("Address updated", { addressId });
+      addressId = existingAddress.id
     } else {
-      // Criar novo endereço
+      // Criar novo endereço apenas se realmente não existir
       const { data: newAddress, error: addressInsertError } = await supabase
         .from('addresses')
         .insert({
@@ -128,7 +146,7 @@ serve(async (req) => {
       }
       
       addressId = newAddress.id
-      logStep("Address created", { addressId });
+      logStep("New address created", { addressId });
     }
 
     // Criar o pedido
