@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
@@ -34,8 +33,8 @@ const Checkout = () => {
   const productPrice = 49.90;
   const total = productPrice * quantity;
 
-  // Validação de campo obrigatório
-  const isFormValid = customerInfo.name && customerInfo.email && customerInfo.phone;
+  // Fix: Ensure isFormValid returns a boolean
+  const isFormValid = Boolean(customerInfo.name && customerInfo.email && customerInfo.phone);
 
   const handleCustomerInfoChange = (info: typeof customerInfo) => {
     setCustomerInfo(info);
