@@ -30,7 +30,13 @@ export const useStripeCheckout = () => {
       const orderData = {
         valor_total: 49.90 * checkoutData.quantity,
         status: 'iniciado',
-        forma_pagamento: 'cartao'
+        forma_pagamento: 'cartao',
+        // Incluir informações do cliente no orderData
+        customerInfo: {
+          name: checkoutData.customerInfo.name,
+          email: checkoutData.customerInfo.email,
+          phone: checkoutData.customerInfo.phone
+        }
       }
 
       const addressData = {
