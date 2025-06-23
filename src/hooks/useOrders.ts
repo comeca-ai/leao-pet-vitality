@@ -12,6 +12,10 @@ export const useOrders = () => {
       if (!user?.id) throw new Error('User not authenticated')
 
       console.log('Fetching orders for user:', user.id)
+      
+      // Buscar pedidos, mas filtrar pedidos "iniciados" muito antigos (mais de 1 hora)
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+      
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -23,6 +27,7 @@ export const useOrders = () => {
           address:addresses (*)
         `)
         .eq('user_id', user.id)
+        .or(`status.neq.iniciado,and(status.eq.iniciado,criado_em.gt.${oneHourAgo})`)
         .order('criado_em', { ascending: false })
 
       if (error) {

@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -86,11 +85,20 @@ serve(async (req) => {
         }
 
         if (order) {
-          // Atualizar status para aguardando pagamento
+          // Determinar forma de pagamento baseada no método do Stripe
+          let paymentMethod = 'cartao'; // default
+          if (session.payment_method_types?.includes('boleto')) {
+            paymentMethod = 'boleto';
+          } else if (session.payment_method_types?.includes('pix')) {
+            paymentMethod = 'pix';
+          }
+
+          // Atualizar status para aguardando pagamento com forma de pagamento correta
           const { error: updateError } = await supabase
             .from('orders')
             .update({ 
               status: 'aguardando_pagamento',
+              forma_pagamento: paymentMethod,
               stripe_payment_intent_id: session.payment_intent,
               atualizado_em: new Date().toISOString()
             })
@@ -101,7 +109,10 @@ serve(async (req) => {
             throw updateError
           }
 
-          logStep('Order status updated to aguardando_pagamento', { orderId: order.id });
+          logStep('Order status updated to aguardando_pagamento', { 
+            orderId: order.id, 
+            paymentMethod: paymentMethod 
+          });
         }
         break
       }
@@ -126,11 +137,25 @@ serve(async (req) => {
           throw orderError
         }
 
-        // Atualizar status para pago
+        // Determinar forma de pagamento pelo método usado
+        let finalPaymentMethod = order.forma_pagamento || 'cartao';
+        if (paymentIntent.charges?.data?.[0]?.payment_method_details) {
+          const methodDetails = paymentIntent.charges.data[0].payment_method_details;
+          if (methodDetails.boleto) {
+            finalPaymentMethod = 'boleto';
+          } else if (methodDetails.pix) {
+            finalPaymentMethod = 'pix';
+          } else if (methodDetails.card) {
+            finalPaymentMethod = 'cartao';
+          }
+        }
+
+        // Atualizar status para pago com forma de pagamento correta
         const { error: updateError } = await supabase
           .from('orders')
           .update({ 
             status: 'pago',
+            forma_pagamento: finalPaymentMethod,
             atualizado_em: new Date().toISOString()
           })
           .eq('id', order.id)
@@ -140,7 +165,10 @@ serve(async (req) => {
           throw updateError
         }
 
-        logStep('Order marked as paid', { orderId: order.id });
+        logStep('Order marked as paid', { 
+          orderId: order.id,
+          paymentMethod: finalPaymentMethod
+        });
 
         // Enviar e-mail de confirmação de pagamento
         try {

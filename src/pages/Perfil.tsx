@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +87,19 @@ const Perfil = () => {
         {statusText[status as keyof typeof statusText] || status}
       </span>
     );
+  };
+
+  const getPaymentMethodDisplay = (paymentMethod: string | null | undefined) => {
+    if (!paymentMethod) return 'Não informado';
+    
+    const paymentMethods = {
+      'pix': 'PIX',
+      'cartao': 'Cartão de Crédito',
+      'boleto': 'Boleto Bancário',
+      'whatsapp': 'WhatsApp'
+    };
+    
+    return paymentMethods[paymentMethod as keyof typeof paymentMethods] || paymentMethod.toUpperCase();
   };
 
   if (profileLoading) {
@@ -335,13 +347,11 @@ const Perfil = () => {
                             </div>
                           )}
 
-                          {order.forma_pagamento && (
-                            <div className="mt-4 pt-4 border-t border-earth-200">
-                              <p className="text-sm text-earth-600">
-                                <span className="font-medium">Forma de pagamento:</span> {order.forma_pagamento.toUpperCase()}
-                              </p>
-                            </div>
-                          )}
+                          <div className="mt-4 pt-4 border-t border-earth-200">
+                            <p className="text-sm text-earth-600">
+                              <span className="font-medium">Forma de pagamento:</span> {getPaymentMethodDisplay(order.forma_pagamento)}
+                            </p>
+                          </div>
                         </div>
                       ))}
                     </div>
