@@ -5,27 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
-const Login = () => {
-  const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    senha: ""
-  });
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+const RecuperarSenha = () => {
+  const [email, setEmail] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Aqui seria implementada a lógica de login
-    console.log("Dados do login:", formData);
+    // Aqui seria implementada a lógica de recuperação de senha
+    console.log("E-mail para recuperação:", email);
   };
 
   return (
@@ -46,10 +34,10 @@ const Login = () => {
         <Card className="border-earth-200 shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold text-earth-700">
-              Entrar
+              Recuperar Senha
             </CardTitle>
             <CardDescription className="text-earth-600">
-              Acesse sua conta
+              Digite seu e-mail para receber as instruções de recuperação
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -63,57 +51,33 @@ const Login = () => {
                   name="email"
                   type="email"
                   placeholder="Digite seu e-mail"
-                  value={formData.email}
-                  onChange={handleInputChange}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500"
                   required
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="senha" className="text-earth-700 font-medium">
-                  Senha
-                </Label>
-                <div className="relative">
-                  <Input
-                    id="senha"
-                    name="senha"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Digite sua senha"
-                    value={formData.senha}
-                    onChange={handleInputChange}
-                    className="border-earth-200 focus:border-leaf-500 focus:ring-leaf-500 pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-500 hover:text-earth-700"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
               </div>
 
               <Button
                 type="submit"
                 className="w-full bg-leaf-600 hover:bg-leaf-700 text-white font-semibold py-3 rounded-full transition-all duration-300 transform hover:scale-105"
               >
-                Entrar
+                Enviar Instruções
               </Button>
             </form>
 
-            <div className="mt-4 text-center">
-              <Link
-                to="/recuperar-senha"
-                className="text-leaf-600 hover:text-leaf-700 text-sm hover:underline transition-colors"
-              >
-                Esqueceu sua senha?
-              </Link>
-            </div>
-
             <div className="mt-6 text-center">
-              <p className="text-earth-600">
+              <p className="text-earth-600 text-sm mb-4">
+                Lembrou da sua senha?{" "}
+                <Link
+                  to="/login"
+                  className="text-leaf-600 hover:text-leaf-700 font-semibold hover:underline transition-colors"
+                >
+                  Fazer login
+                </Link>
+              </p>
+              
+              <p className="text-earth-600 text-sm">
                 Não tem uma conta?{" "}
                 <Link
                   to="/cadastro"
@@ -129,9 +93,10 @@ const Login = () => {
         <div className="mt-6 text-center">
           <Link
             to="/"
-            className="text-earth-600 hover:text-leaf-600 text-sm hover:underline transition-colors"
+            className="inline-flex items-center text-earth-600 hover:text-leaf-600 text-sm hover:underline transition-colors"
           >
-            ← Voltar ao início
+            <ArrowLeft className="w-4 h-4 mr-1" />
+            Voltar ao início
           </Link>
         </div>
       </div>
@@ -139,4 +104,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default RecuperarSenha;
