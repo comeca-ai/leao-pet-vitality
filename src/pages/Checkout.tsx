@@ -18,6 +18,7 @@ import ProductSelector from "@/components/checkout/ProductSelector";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { useProcessOrder } from "@/hooks/useProcessOrder";
 import { useSendOrderEmail } from "@/hooks/useSendOrderEmail";
+import { useProducts } from "@/hooks/useProducts";
 import { useStockValidation, validateStockAvailability } from "@/hooks/useStockValidation";
 import { validateCompleteAddress } from "@/components/checkout/utils/validation";
 import { useToast } from "@/hooks/use-toast";
@@ -60,11 +61,16 @@ const Checkout = () => {
   const { mutate: processOrder, isPending: isOrderLoading } = useProcessOrder();
   const { mutate: sendOrderEmail } = useSendOrderEmail();
 
-  // Usar um product ID fixo para o produto principal
-  const mainProductId = "123e4567-e89b-12d3-a456-426614174000";
+  // Buscar produtos do banco de dados
+  const { data: products, isLoading: isLoadingProducts, error: productsError } = useProducts();
+
+  // Usar o primeiro produto ativo ou fallback
+  const mainProduct = products && products.length > 0 ? products[0] : null;
+  const mainProductId = mainProduct?.id;
+
   const { data: stockData, refetch: refetchStock } = useStockValidation(mainProductId);
 
-  const productPrice = 49.90;
+  const productPrice = mainProduct?.preco_promocional || mainProduct?.preco || 49.90;
   const total = productPrice * quantity;
 
   // Validação completa do endereço
@@ -104,6 +110,15 @@ const Checkout = () => {
   };
 
   const validateBeforeCheckout = () => {
+    // Validar se há produto disponível
+    if (!mainProduct) {
+      notifications.showError(
+        "Produto indisponível",
+        "Nenhum produto está disponível no momento."
+      );
+      return false;
+    }
+
     // Validar dados do formulário
     if (!isFormValid) {
       notifications.showValidationError(
@@ -115,7 +130,7 @@ const Checkout = () => {
 
     // Validar estoque
     if (!stockValidation.isAvailable) {
-      notifications.showStockError("Extrato de Juba de Leão");
+      notifications.showStockError(mainProduct.nome);
       return false;
     }
 
@@ -150,7 +165,7 @@ const Checkout = () => {
             orderNumber: orderNumber,
             orderTotal: total,
             orderItems: [{
-              name: "Extrato de Juba de Leão 30ml",
+              name: mainProduct?.nome || "Extrato de Juba de Leão 30ml",
               quantity: quantity,
               price: productPrice,
             }],
@@ -246,6 +261,45 @@ const Checkout = () => {
 
   const isProcessing = processingState !== 'idle';
 
+  // Mostrar loading enquanto carrega produtos
+  if (isLoadingProducts) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-leaf-600" />
+            <p className="text-earth-600">Carregando produtos...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar erro se não conseguir carregar produtos
+  if (productsError || !mainProduct) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-cream-50 to-cream-100">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-4xl mx-auto text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-earth-800 mb-2">Produto Indisponível</h2>
+            <p className="text-earth-600 mb-4">
+              Não há produtos disponíveis no momento. Tente novamente mais tarde.
+            </p>
+            <button 
+              onClick={() => navigate('/')}
+              className="bg-leaf-600 hover:bg-leaf-700 text-white px-6 py-2 rounded-lg"
+            >
+              Voltar ao Início
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Mostrar erro de pagamento se houver
   if (paymentError) {
     return (
@@ -302,7 +356,7 @@ const Checkout = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-2xl md:text-3xl font-bold text-earth-800 mb-8 pb-2 border-b-2 border-earth-300">
-            Checkout - Juba de Leão para Pets
+            Checkout - {mainProduct.nome}
           </h1>
 
           <CheckoutProgress currentStep={currentStep} />
