@@ -144,6 +144,7 @@ export type Database = {
           criado_em: string | null
           forma_pagamento: string | null
           id: string
+          shipping_address: Json | null
           status: string
           stripe_payment_intent_id: string | null
           user_id: string
@@ -155,6 +156,7 @@ export type Database = {
           criado_em?: string | null
           forma_pagamento?: string | null
           id?: string
+          shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
           user_id: string
@@ -166,6 +168,7 @@ export type Database = {
           criado_em?: string | null
           forma_pagamento?: string | null
           id?: string
+          shipping_address?: Json | null
           status?: string
           stripe_payment_intent_id?: string | null
           user_id?: string
@@ -184,6 +187,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_logs: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: number
+          order_id: string | null
+          payload: Json
+          stripe_event_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: never
+          order_id?: string | null
+          payload: Json
+          stripe_event_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: never
+          order_id?: string | null
+          payload?: Json
+          stripe_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_logs_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
