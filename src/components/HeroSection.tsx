@@ -21,19 +21,17 @@ const HeroSection = () => {
             <div className="space-y-4">
               <Badge className="bg-leaf-100 text-leaf-700 border-leaf-300 px-4 py-2">
                 <Shield className="w-4 h-4 mr-2" />
-                Aprovado pelo MAPA
+                {{HERO_BADGE_TEXT}}
               </Badge>
               
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-earth-800 leading-tight">
-                O Único Extrato de{" "}
-                <span className="text-leaf-600">Juba de Leão</span>{" "}
-                para Pets Aprovado pelo MAPA
+                {{HERO_TITLE_PREFIX}}{" "}
+                <span className="text-leaf-600">{{HERO_TITLE_HIGHLIGHT}}</span>{" "}
+                {{HERO_TITLE_SUFFIX}}
               </h1>
               
               <p className="text-xl text-earth-600 leading-relaxed">
-                Mais saúde, bem-estar e vitalidade para cães e gatos. 
-                Reforce a imunidade, melhore a cognição e contribua para 
-                a saúde geral do seu pet com segurança comprovada.
+                {{HERO_DESCRIPTION}}
               </p>
             </div>
 
@@ -61,7 +59,7 @@ const HeroSection = () => {
                   className="bg-leaf-600 hover:bg-leaf-700 text-white px-8 py-4 text-lg rounded-full shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <Truck className="w-5 h-5 mr-2" />
-                  Comprar Agora – Frete Grátis
+                  {{HERO_CTA_PRIMARY_TEXT}}
                 </Button>
               </Link>
               
@@ -71,7 +69,7 @@ const HeroSection = () => {
                 onClick={() => scrollToSection("beneficios")}
                 className="border-earth-300 text-earth-700 hover:bg-earth-50 px-8 py-4 text-lg rounded-full"
               >
-                Saiba Mais
+                {{HERO_CTA_SECONDARY_TEXT}}
               </Button>
             </div>
 
